@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using System;
+using System.IO;
+using System.Text;
 
 namespace DSGTool
 {
@@ -9,15 +11,18 @@ namespace DSGTool
     {
         // Action to write to the text box
         private readonly Action<string> _writeAction;
+        private readonly Action<string> _logAction;
+
+        private readonly System.Text.StringBuilder _buffer = new();
 
         /**
          * Constructor of the text writer.
          * 
          * @param writeAction: Action to write to the text box.
          * */
-        public TextBoxWriter(Action<string> writeAction)
+        public TextBoxWriter(Action<string> logAction)
         {
-            _writeAction = writeAction;
+            _logAction = logAction;
         }
 
         // UTF-8 encoding
@@ -30,7 +35,8 @@ namespace DSGTool
          * */
         public override void WriteLine(string value)
         {
-            _writeAction(value);            
+            if (!string.IsNullOrEmpty(value))
+                _logAction(value);
         }
 
         /**
@@ -38,9 +44,21 @@ namespace DSGTool
          * 
          * @param value: String to write.
          * */
-        public override void Write(string value)
+        public override void Write(char value)
         {
-            _writeAction(value);
+            if (value == '\n') // char vs char ✅
+            {
+                if (_buffer.Length > 0)
+                {
+                    _logAction(_buffer.ToString());
+                    _buffer.Clear();
+                }
+            }
+            else
+            {
+                _buffer.Append(value);
+            }
         }
+
     }
 }

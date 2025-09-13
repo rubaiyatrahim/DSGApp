@@ -1,4 +1,6 @@
 ﻿using DSGClient;
+using System.Collections.Concurrent;
+using System.Text;
 
 namespace DSGTool
 {
@@ -7,6 +9,12 @@ namespace DSGTool
      * */
     public partial class MainForm : Form
     {
+        // Thread-safe log queue
+        private readonly ConcurrentQueue<string> _logQueue = new();
+        private readonly System.Windows.Forms.Timer _logTimer;
+        private readonly string _logFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "DSGClient_Log.txt");
+        private readonly object _fileLock = new();
+
         // DSG client
         private DSGClientPool _clientPool;
 
@@ -19,7 +27,24 @@ namespace DSGTool
         private const string PASSWORD = "cse.123";
         private const int HEARTBEAT_INTERVAL_SECONDS = 2;
 
-        public MainForm() { InitializeComponent(); }
+        public MainForm() 
+        { 
+            InitializeComponent();
+
+            // Setup periodic UI log flush (every 200 ms)
+            _logTimer = new System.Windows.Forms.Timer { Interval = 10 };
+            _logTimer.Tick += (s, e) => FlushLogQueue();
+            _logTimer.Start();
+        }
+
+        /*
+        private int _downloadLogCounter = 0;
+
+        public void LogDownload(string message)
+        {
+            if (++_downloadLogCounter % 10 == 0) // Only log every 100th event
+                Log($"[Download] {message}");
+        }*/
 
         private async void MainForm_Load(object sender, EventArgs e)
         {
@@ -82,6 +107,12 @@ namespace DSGTool
          * */
         private void Log(string message)
         {
+            string line = $"[{DateTime.Now:dd-MMM-yyyy HH:mm:ss.fff}] {message}";
+            _logQueue.Enqueue(line);
+
+            // Write to file asynchronously
+            Task.Run(() => AppendLogToFile(line));
+            /*
             if (InvokeRequired) // Check if we're on the UI thread
             {
                 BeginInvoke(new Action(() => Log(message))); // Run on the UI thread
@@ -97,9 +128,41 @@ namespace DSGTool
             using (StreamWriter sw = new StreamWriter("DSGClient_Log.txt", true))
             {
                 sw.WriteLine($"{logTime} {message}");
+            }*/
+        }
+
+        /// <summary>
+        /// Append log line to file (async, thread-safe).
+        /// </summary>
+        private void AppendLogToFile(string line)
+        {
+            try
+            {
+                lock (_fileLock)
+                {
+                    File.AppendAllText(_logFilePath, line + Environment.NewLine, Encoding.UTF8);
+                }
+            }
+            catch
+            {
+                // Optional: handle logging errors (e.g. disk full)
             }
         }
 
+        /// <summary>
+        /// Flush queued log lines to UI (runs every 200ms).
+        /// </summary>
+        private void FlushLogQueue()
+        {
+            if (_logQueue.IsEmpty) return;
+
+            StringBuilder sb = new();
+            while (_logQueue.TryDequeue(out string line))
+                sb.AppendLine(line);
+
+            txtLog.AppendText(Environment.NewLine + sb.ToString());
+            txtLog.ScrollToCaret();
+        }
         protected override async void OnFormClosing(FormClosingEventArgs e)
         {
             try
