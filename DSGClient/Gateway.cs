@@ -9,6 +9,8 @@
         private string _username;
         private string _password;
 
+        public Dictionary<string, int> MessageCounts { get; } = new();
+
         public Gateway(string environmentName, string gatewayName, string host, int port, string userName, string password)
         {
             _environmentname = environmentName;
@@ -25,5 +27,13 @@
         public int Port { get => _port; set => _port = value; }
         public string Username { get => _username; set => _username = value; }
         public string Password { get => _password; set => _password = value; }
+
+        public void IncrementMessageCount(string msgType)
+        {
+            if (MessageCounts.ContainsKey(msgType))
+                MessageCounts[msgType]++;
+            else
+                MessageCounts[msgType] = 1;
+        }
     }
 }

@@ -43,6 +43,14 @@ namespace DSGTool
             dataGridViewClients.Columns.Add(new DataGridViewButtonColumn { Name = "StopButton", HeaderText = "", Text = "Stop", UseColumnTextForButtonValue = true });
             dataGridViewClients.Columns.Add(new DataGridViewButtonColumn { Name = "DownloadButton", HeaderText = "", Text = "Download", UseColumnTextForButtonValue = true });
 
+            dataGridViewClients.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                HeaderText = "Message Counts",
+                DataPropertyName = "MessageCountsText", // property from a view model
+                ReadOnly = true,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
+            });
+
             dataGridViewClients.DataSource = _clients;
             dataGridViewClients.CellContentClick += dataGridViewClients_CellContentClick;
 
@@ -118,13 +126,31 @@ namespace DSGTool
 
             // Create multi-client
             _clientPool = new DSGClientPool();
+            _clientPool.MessageReceived += OnMessageReceived;
             var clientOM = _clientPool.AddClient(gatewayOM, new List<MessageType> { msgType_EXP_INDEX_WATCH, msgType_EXP_STAT_UPDATE }, HEARTBEAT_INTERVAL_SECONDS);
             var clientMD = _clientPool.AddClient(gatewayMD, new List<MessageType> { msgType_Announcement }, HEARTBEAT_INTERVAL_SECONDS);
 
-            _clients.Add(new ClientViewModel { Name = gatewayOM.GatewayName, Host = gatewayOM.Host, Port = gatewayOM.Port, MessageTypes = clientOM.MessageTypes, Status = "Stopped", Client = clientOM });
-            _clients.Add(new ClientViewModel { Name = gatewayMD.GatewayName, Host = gatewayMD.Host, Port = gatewayMD.Port, MessageTypes = clientMD.MessageTypes, Status = "Stopped", Client = clientMD });
+            _clients.Add(new ClientViewModel(gatewayOM) { Name = gatewayOM.GatewayName, Host = gatewayOM.Host, Port = gatewayOM.Port, MessageTypes = clientOM.MessageTypes, Status = "Stopped", Client = clientOM });
+            _clients.Add(new ClientViewModel(gatewayMD) { Name = gatewayMD.GatewayName, Host = gatewayMD.Host, Port = gatewayMD.Port, MessageTypes = clientMD.MessageTypes, Status = "Stopped", Client = clientMD });
             
             dataGridViewClients.DataSource = _clients;
+        }
+
+        private void OnMessageReceived(string gatewayName, string msgType)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action(() => OnMessageReceived(gatewayName, msgType)));
+                return;
+            }
+
+            var clientVm = _clients.FirstOrDefault(c => c.Gateway.GatewayName == gatewayName);
+            if (clientVm != null)
+            {
+                clientVm.Gateway.IncrementMessageCount(msgType);
+                clientVm.Refresh(); // tells DataGridView to rebind MessageCountsText
+                dataGridViewClients.Refresh();
+            }
         }
 
         private async void btnConnect_Click(object sender, EventArgs e)

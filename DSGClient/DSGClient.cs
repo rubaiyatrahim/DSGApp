@@ -8,6 +8,7 @@ namespace DSGClient
      * */
     public sealed class DSGClient : IAsyncDisposable
     {
+        public event Action<string, string>? MessageReceived; // (gatewayName, msgType)
         // Connection state
         private volatile bool _connected;
         public bool IsConnected => _connected;
@@ -199,6 +200,10 @@ namespace DSGClient
                         accumulator.RemoveRange(0, fullMessageLength);      // Remove the full message from accumulator
 
                         Console.WriteLine($"{GATEWAY_TAG}>> Message Id: {messageId}, Sequence Number: {sequenceNumber}");
+
+                        MessageReceived?.Invoke(_gateway.GatewayName, messageId.ToString());
+                        //_gateway.IncrementMessageCount(messageId.ToString());
+
 
                         if (payload.Length == 0)
                         {
