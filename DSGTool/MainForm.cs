@@ -1,4 +1,6 @@
 ﻿using DSGClient;
+using System.ComponentModel;
+using System.Windows.Forms;
 
 namespace DSGTool
 {
@@ -7,6 +9,8 @@ namespace DSGTool
      * */
     public partial class MainForm : Form
     {
+        private BindingList<ClientViewModel> _clients = new();
+
         // DSG client
         private DSGClientPool _clientPool;
 
@@ -19,7 +23,83 @@ namespace DSGTool
         private const string PASSWORD = "cse.123";
         private const int HEARTBEAT_INTERVAL_SECONDS = 2;
 
-        public MainForm() { InitializeComponent(); }
+        public MainForm()
+        {
+            InitializeComponent();
+            InitializeClientGrid();
+        }
+
+        private void InitializeClientGrid()
+        {
+            dataGridViewClients.AutoGenerateColumns = false;
+
+            dataGridViewClients.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Gateway", DataPropertyName = "Name" });
+            dataGridViewClients.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Host", DataPropertyName = "Host" });
+            dataGridViewClients.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Port", DataPropertyName = "Port" });
+            dataGridViewClients.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Message Types", DataPropertyName = "MessageTypes" });
+            dataGridViewClients.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Status", DataPropertyName = "Status" });
+
+            dataGridViewClients.Columns.Add(new DataGridViewButtonColumn { Name = "ConnectButton", HeaderText = "", Text = "Connect", UseColumnTextForButtonValue = true });
+            dataGridViewClients.Columns.Add(new DataGridViewButtonColumn { Name = "StopButton", HeaderText = "", Text = "Stop", UseColumnTextForButtonValue = true });
+            dataGridViewClients.Columns.Add(new DataGridViewButtonColumn { Name = "DownloadButton", HeaderText = "", Text = "Download", UseColumnTextForButtonValue = true });
+
+            dataGridViewClients.DataSource = _clients;
+            dataGridViewClients.CellContentClick += dataGridViewClients_CellContentClick;
+
+        }
+
+        private async void dataGridViewClients_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0) return;
+            var client = _clients[e.RowIndex];
+
+            var columnName = dataGridViewClients.Columns[e.ColumnIndex].Name;
+            try
+            {
+                if (columnName == "ConnectButton")
+                {
+                    await client.Client.StartAsync(_cts.Token);
+                    client.Status = "Connected";
+                    Log($"{client.Name} connected.");
+                }
+                else if (columnName == "StopButton")
+                {
+                    await client.Client.StopAsync();
+                    client.Status = "Stopped";
+                    Log($"{client.Name} stopped.");
+                }
+                else if (columnName == "DownloadButton")
+                {
+                    await client.Client.DownloadAsync("1", "1", "1000000");
+                    Log($"{client.Name} download requested.");
+                }
+                ApplyRowColor(client);
+                //dataGridViewClients.Refresh(); // Refresh UI to update status column
+            }
+            catch (Exception ex)
+            {
+                Log($"Error on {columnName} for {client.Name}: {ex.Message}");
+            }
+        }
+        private void ApplyRowColor(ClientViewModel client)
+        {
+            var idx = _clients.IndexOf(client);
+            if (idx < 0) return;
+            var row = dataGridViewClients.Rows[idx];
+
+            switch (client.Status)
+            {
+                case "Connected":
+                    row.DefaultCellStyle.BackColor = Color.LightGreen;
+                    break;
+                case "Stopped":
+                    row.DefaultCellStyle.BackColor = Color.LightYellow;
+                    break;
+                default:
+                    row.DefaultCellStyle.BackColor = Color.White;
+                    break;
+            }
+        }
 
         private async void MainForm_Load(object sender, EventArgs e)
         {
@@ -38,8 +118,13 @@ namespace DSGTool
 
             // Create multi-client
             _clientPool = new DSGClientPool();
-            _clientPool.AddClient(gatewayOM, new List<MessageType> { msgType_EXP_INDEX_WATCH, msgType_EXP_STAT_UPDATE }, HEARTBEAT_INTERVAL_SECONDS);
-            _clientPool.AddClient(gatewayMD, new List<MessageType> { msgType_Announcement }, HEARTBEAT_INTERVAL_SECONDS);
+            var clientOM = _clientPool.AddClient(gatewayOM, new List<MessageType> { msgType_EXP_INDEX_WATCH, msgType_EXP_STAT_UPDATE }, HEARTBEAT_INTERVAL_SECONDS);
+            var clientMD = _clientPool.AddClient(gatewayMD, new List<MessageType> { msgType_Announcement }, HEARTBEAT_INTERVAL_SECONDS);
+
+            _clients.Add(new ClientViewModel { Name = gatewayOM.GatewayName, Host = gatewayOM.Host, Port = gatewayOM.Port, MessageTypes = clientOM.MessageTypes, Status = "Stopped", Client = clientOM });
+            _clients.Add(new ClientViewModel { Name = gatewayMD.GatewayName, Host = gatewayMD.Host, Port = gatewayMD.Port, MessageTypes = clientMD.MessageTypes, Status = "Stopped", Client = clientMD });
+            
+            dataGridViewClients.DataSource = _clients;
         }
 
         private async void btnConnect_Click(object sender, EventArgs e)
@@ -54,10 +139,10 @@ namespace DSGTool
                 Log("Connection error: " + ex.Message);
             }
         }
-        
-        private async void btnDownload_Click(object sender, EventArgs e) 
+
+        private async void btnDownload_Click(object sender, EventArgs e)
             => await _clientPool.SendDownloadAllAsync("1", "1", "1000000");
-        
+
         private async void btnHeartbeat_Click(object sender, EventArgs e)
         {
             try
@@ -71,10 +156,10 @@ namespace DSGTool
             }
         }
 
-        private async void btnStop_Click(object sender, EventArgs e) => await StopAllAsync();            
-                
+        private async void btnStop_Click(object sender, EventArgs e) => await StopAllAsync();
+
         private async void btnQuit_Click(object sender, EventArgs e) => Close();
-        
+
         /**
          * Log a message to the text box.
          * 
@@ -119,6 +204,11 @@ namespace DSGTool
             {
                 if (_clientPool != null)
                     await _clientPool.StopAllAsync();
+
+                foreach (var c in _clients)
+                    c.Status = "Stopped";
+
+                dataGridViewClients.Refresh();
             }
             catch (Exception ex)
             {

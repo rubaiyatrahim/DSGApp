@@ -24,6 +24,8 @@
             btnQuit = new Button();
             txtLog = new RichTextBox();
             btnConnect = new Button();
+            dataGridViewClients = new DataGridView();
+            ((System.ComponentModel.ISupportInitialize)dataGridViewClients).BeginInit();
             SuspendLayout();
             // 
             // btnDownload
@@ -65,11 +67,11 @@
             // txtLog
             // 
             txtLog.Font = new Font("Consolas", 9F);
-            txtLog.Location = new Point(12, 50);
+            txtLog.Location = new Point(12, 196);
             txtLog.Name = "txtLog";
             txtLog.ReadOnly = true;
             txtLog.ScrollBars = RichTextBoxScrollBars.Vertical;
-            txtLog.Size = new Size(1303, 488);
+            txtLog.Size = new Size(1303, 342);
             txtLog.TabIndex = 5;
             txtLog.Text = "";
             // 
@@ -82,9 +84,19 @@
             btnConnect.Text = "Connect";
             btnConnect.Click += btnConnect_Click;
             // 
+            // dataGridViewClients
+            // 
+            dataGridViewClients.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCellsExceptHeader;
+            dataGridViewClients.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dataGridViewClients.Location = new Point(14, 60);
+            dataGridViewClients.Name = "dataGridViewClients";
+            dataGridViewClients.Size = new Size(1301, 130);
+            dataGridViewClients.TabIndex = 6;
+            // 
             // MainForm
             // 
             ClientSize = new Size(1327, 550);
+            Controls.Add(dataGridViewClients);
             Controls.Add(btnConnect);
             Controls.Add(btnDownload);
             Controls.Add(btnHeartbeat);
@@ -94,8 +106,10 @@
             Name = "MainForm";
             Text = "DSG Client GUI";
             Load += MainForm_Load;
+            ((System.ComponentModel.ISupportInitialize)dataGridViewClients).EndInit();
             ResumeLayout(false);
         }
         private Button btnConnect;
+        private DataGridView dataGridViewClients;
     }
 }

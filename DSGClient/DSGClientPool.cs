@@ -7,8 +7,14 @@
 
         public DSGClientPool() { }
 
-        public void AddClient(Gateway gateway, List<MessageType> messageTypes, int heartbeatSeconds = 2)
-            => _clients.Add(new DSGClient(gateway, messageTypes, heartbeatSeconds));
+        public DSGClient AddClient(Gateway gateway, List<MessageType> messageTypes, int heartbeatSeconds = 2)
+        //=> _clients.Add(new DSGClient(gateway, messageTypes, heartbeatSeconds));
+        {
+            var client = new DSGClient(gateway, messageTypes, heartbeatSeconds);
+            //client.MessageReceived += (clientId, msgType) => MessageReceived?.Invoke(clientId, msgType);
+            _clients.Add(client);
+            return client;
+        }
         public async Task StartAllAsync(CancellationToken appStop = default) 
             => await Task.WhenAll(_clients.Select(c => c.StartAsync(appStop)));
         public async Task SendDownloadAllAsync(string partitionId, string startingSequenceNumber, string endingSequenceNumber) 

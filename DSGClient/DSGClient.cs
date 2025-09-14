@@ -11,6 +11,7 @@ namespace DSGClient
         // Connection state
         private volatile bool _connected;
         public bool IsConnected => _connected;
+        public string MessageTypes => _messageTypes.Select(x => x.MessageName).Aggregate((a, b) => a + ", " + b);
         
         // Environment and gateway tag to prefix log messages
         private string GATEWAY_TAG => "[" + _gateway.EnvironmentName + ":" + _gateway.GatewayName + "] ";
