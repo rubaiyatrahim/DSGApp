@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace DSGTool
@@ -9,8 +10,16 @@ namespace DSGTool
         private Label lblStatus;
         private Label lblTotal;
         private FlowLayoutPanel pnlMessageTypes;
+        private Button btnStart;
+        private Button btnDownload;
+        private Button btnStop;
 
         public string GatewayName { get; private set; }
+
+        // Events for MainForm to subscribe
+        public event Action<string>? StartClicked;
+        public event Action<string>? DownloadClicked;
+        public event Action<string>? StopClicked;
 
         public GatewayCard(string gatewayName)
         {
@@ -24,15 +33,30 @@ namespace DSGTool
             this.BorderStyle = BorderStyle.FixedSingle;
             this.Padding = new Padding(10);
             this.Margin = new Padding(10);
-            this.Width = 250;
-            this.Height = 150;
+            this.Width = 260;
+            this.Height = 180;
+
+            // Main Layout
+            var layout = new TableLayoutPanel()
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 5,
+                AutoSize = true
+            };
+            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Title
+            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Status
+            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Total
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); // Message types (expandable)
+            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Buttons
 
             lblTitle = new Label()
             {
                 Text = GatewayName,
                 Font = new Font("Segoe UI", 12, FontStyle.Bold),
                 AutoSize = true,
-                ForeColor = Color.Black
+                ForeColor = Color.Black,
+                Dock = DockStyle.Fill
             };
 
             lblStatus = new Label()
@@ -40,45 +64,60 @@ namespace DSGTool
                 Text = "Disconnected",
                 ForeColor = Color.Red,
                 AutoSize = true,
-                Font = new Font("Segoe UI", 10, FontStyle.Regular)
+                Font = new Font("Segoe UI", 10, FontStyle.Regular),
+                Dock = DockStyle.Fill
             };
 
             lblTotal = new Label()
             {
                 Text = "Total: 0",
                 AutoSize = true,
-                Font = new Font("Segoe UI", 10, FontStyle.Italic)
+                Font = new Font("Segoe UI", 10, FontStyle.Italic),
+                Dock = DockStyle.Fill
             };
 
             pnlMessageTypes = new FlowLayoutPanel()
             {
-                Dock = DockStyle.Bottom,
-                Height = 60,
-                AutoScroll = true
+                Dock = DockStyle.Fill,
+                AutoScroll = true,
+                WrapContents = true
             };
 
-            var layout = new FlowLayoutPanel()
+            // Buttons Row
+            var buttonPanel = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.TopDown,
-                AutoSize = true,
-                WrapContents = false
+                FlowDirection = FlowDirection.LeftToRight,
+                Height = 35
             };
 
-            layout.Controls.Add(lblTitle);
-            layout.Controls.Add(lblStatus);
-            layout.Controls.Add(lblTotal);
-            layout.Controls.Add(pnlMessageTypes);
+            btnStart = new Button { Text = "Start", Width = 60 };
+            btnDownload = new Button { Text = "Download", Width = 80 };
+            btnStop = new Button { Text = "Stop", Width = 60 };
+
+            btnStart.Click += (s, e) => StartClicked?.Invoke(GatewayName);
+            btnDownload.Click += (s, e) => DownloadClicked?.Invoke(GatewayName);
+            btnStop.Click += (s, e) => StopClicked?.Invoke(GatewayName);
+
+            buttonPanel.Controls.Add(btnStart);
+            buttonPanel.Controls.Add(btnDownload);
+            buttonPanel.Controls.Add(btnStop);
+
+            // Add everything to layout
+            layout.Controls.Add(lblTitle, 0, 0);
+            layout.Controls.Add(lblStatus, 0, 1);
+            layout.Controls.Add(lblTotal, 0, 2);
+            layout.Controls.Add(pnlMessageTypes, 0, 3);
+            layout.Controls.Add(buttonPanel, 0, 4);
 
             this.Controls.Add(layout);
         }
 
         public void UpdateStatus(bool? connected)
         {
-            if (connected is null) 
-                return;
-            lblStatus.Text = (bool)connected ? "Connected" : "Disconnected";
-            lblStatus.ForeColor = (bool)connected ? Color.Green : Color.Red;
+            if (connected is null) return;
+            lblStatus.Text = connected.Value ? "Connected" : "Disconnected";
+            lblStatus.ForeColor = connected.Value ? Color.Green : Color.Red;
         }
 
         public void UpdateTotalCount(int total)

@@ -19,7 +19,7 @@
 
             client.StatusChanged += (clientId, connected) =>
             {
-                StatusChanged.Invoke(clientId, connected);
+                StatusChanged?.Invoke(clientId, connected);
             };
             _clients.Add(client);
             return client;
@@ -39,6 +39,7 @@
             => await Task.WhenAll(_clients.Select(c => c.StopAsync()));
         public DSGClient? GetClientByGatewayName(string gatewayName) 
             => _clients.FirstOrDefault(c => c.GatewayName == gatewayName);
+        public List<DSGClient> Clients => _clients;
                     
         public async ValueTask DisposeAsync()
         {

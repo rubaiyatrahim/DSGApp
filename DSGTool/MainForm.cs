@@ -45,25 +45,65 @@ namespace DSGTool
             flowLayoutPanel1.WrapContents = true;
             flowLayoutPanel1.AutoScroll = true;
 
-            var card1 = new GatewayCard(gatewayOM.GatewayName);
-            flowLayoutPanel1.Controls.Add(card1);
-            _cards[gatewayOM.GatewayName] = card1;
+            foreach (var client in _clientPool.Clients)
+            {
+                string gatewayName = client.GatewayName;
 
-            var stats1 = new GatewayStats(gatewayOM.GatewayName);
-            _stats[gatewayOM.GatewayName] = stats1;
+                var stats = new GatewayStats(gatewayName);
+                _stats[gatewayName] = stats;
 
-            var card2 = new GatewayCard(gatewayMD.GatewayName);
-            flowLayoutPanel1.Controls.Add(card2);
-            _cards[gatewayMD.GatewayName] = card2;
+                //var card = new GatewayCard(gatewayName);
+                //card.StartClicked += OnStartClicked;
+                //card.DownloadClicked += OnDownloadClicked;
+                //card.StopClicked += OnStopClicked;
 
-            var stats2 = new GatewayStats(gatewayMD.GatewayName);
-            _stats[gatewayMD.GatewayName] = stats2;
+                var card = new GatewayCard(gatewayName);
 
+                card.StartClicked += async gw =>
+                {
+                    var client = _clientPool.GetClientByGatewayName(gatewayName);
+                    await client.StartAsync(_cts.Token);
+                    card.UpdateStatus(true);
+                };
+
+                card.DownloadClicked += async gw =>
+                {
+                    var client = _clientPool.GetClientByGatewayName(gatewayName);
+                    await client.DownloadAsync("1", "1", "1000000");
+                };
+
+                card.StopClicked += async gw =>
+                {
+                    var client = _clientPool.GetClientByGatewayName(gatewayName);
+                    await client.StopAsync();
+                };
+
+                flowLayoutPanel1.Controls.Add(card);
+
+                flowLayoutPanel1.Controls.Add(card);
+                _cards[gatewayName] = card;
+            }
 
             _clientPool.MessageReceived += OnMessageReceived;
             _clientPool.StatusChanged += OnStatusChanged;
         }
+        //private async void OnStartClicked(string gatewayName)
+        //{
+        //    var client = _clientPool.GetClientByGatewayName(gatewayName);
+        //    await client.StartAsync(_cts.Token);
+        //}
 
+        //private async void OnDownloadClicked(string gatewayName)
+        //{
+        //    var client = _clientPool.GetClientByGatewayName(gatewayName);
+        //    await client.DownloadAsync("1", "1", "1000000");
+        //}
+
+        //private async void OnStopClicked(string gatewayName)
+        //{
+        //    var client = _clientPool.GetClientByGatewayName(gatewayName);
+        //    await client.StopAsync();
+        //}
         private void OnMessageReceived(string gatewayName, string msgType)
         {
             if (InvokeRequired)
