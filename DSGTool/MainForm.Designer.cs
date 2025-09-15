@@ -24,6 +24,7 @@
             btnQuit = new Button();
             txtLog = new RichTextBox();
             btnConnect = new Button();
+            flowLayoutPanel1 = new FlowLayoutPanel();
             SuspendLayout();
             // 
             // btnDownload
@@ -65,11 +66,11 @@
             // txtLog
             // 
             txtLog.Font = new Font("Consolas", 9F);
-            txtLog.Location = new Point(12, 50);
+            txtLog.Location = new Point(12, 355);
             txtLog.Name = "txtLog";
             txtLog.ReadOnly = true;
             txtLog.ScrollBars = RichTextBoxScrollBars.Vertical;
-            txtLog.Size = new Size(1303, 488);
+            txtLog.Size = new Size(1303, 183);
             txtLog.TabIndex = 5;
             txtLog.Text = "";
             // 
@@ -82,9 +83,17 @@
             btnConnect.Text = "Connect";
             btnConnect.Click += btnConnect_Click;
             // 
+            // flowLayoutPanel1
+            // 
+            flowLayoutPanel1.Location = new Point(14, 55);
+            flowLayoutPanel1.Name = "flowLayoutPanel1";
+            flowLayoutPanel1.Size = new Size(1301, 287);
+            flowLayoutPanel1.TabIndex = 6;
+            // 
             // MainForm
             // 
             ClientSize = new Size(1327, 550);
+            Controls.Add(flowLayoutPanel1);
             Controls.Add(btnConnect);
             Controls.Add(btnDownload);
             Controls.Add(btnHeartbeat);
@@ -97,5 +106,6 @@
             ResumeLayout(false);
         }
         private Button btnConnect;
+        private FlowLayoutPanel flowLayoutPanel1;
     }
 }

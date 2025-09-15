@@ -20,7 +20,8 @@ namespace DSGTool
         private const int HEARTBEAT_INTERVAL_SECONDS = 2;
 
         public MainForm() { InitializeComponent(); }
-
+        private Dictionary<string, GatewayCard> _cards = new();
+        private Dictionary<string, GatewayStats> _stats = new();
         private async void MainForm_Load(object sender, EventArgs e)
         {
             // Create cancellation token
@@ -40,6 +41,59 @@ namespace DSGTool
             _clientPool = new DSGClientPool();
             _clientPool.AddClient(gatewayOM, new List<MessageType> { msgType_EXP_INDEX_WATCH, msgType_EXP_STAT_UPDATE }, HEARTBEAT_INTERVAL_SECONDS);
             _clientPool.AddClient(gatewayMD, new List<MessageType> { msgType_Announcement }, HEARTBEAT_INTERVAL_SECONDS);
+
+            flowLayoutPanel1.WrapContents = true;
+            flowLayoutPanel1.AutoScroll = true;
+
+            var card1 = new GatewayCard(gatewayOM.GatewayName);
+            flowLayoutPanel1.Controls.Add(card1);
+            _cards[gatewayOM.GatewayName] = card1;
+
+            var stats1 = new GatewayStats(gatewayOM.GatewayName);
+            _stats[gatewayOM.GatewayName] = stats1;
+
+            var card2 = new GatewayCard(gatewayMD.GatewayName);
+            flowLayoutPanel1.Controls.Add(card2);
+            _cards[gatewayMD.GatewayName] = card2;
+
+            var stats2 = new GatewayStats(gatewayMD.GatewayName);
+            _stats[gatewayMD.GatewayName] = stats2;
+
+
+            _clientPool.MessageReceived += OnMessageReceived;
+            _clientPool.StatusChanged += OnStatusChanged;
+        }
+
+        private void OnMessageReceived(string gatewayName, string msgType)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action(() => OnMessageReceived(gatewayName, msgType)));
+                return;
+            }
+
+            if (_stats.TryGetValue(gatewayName, out var stats) && _cards.TryGetValue(gatewayName, out var card))
+            {
+                stats.IncrementMessageCount(msgType);
+
+                //card.UpdateStatus(_clientPool.GetClientByGatewayName(gatewayName).IsConnected);
+                card.UpdateTotalCount(stats.TotalMessages);
+                card.UpdateMessageTypeCount(msgType, stats.GetCount(msgType));
+            }
+        }
+
+        private void OnStatusChanged(string gatewayName, bool connected)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action(() => OnStatusChanged(gatewayName, connected)));
+                return;
+            }
+
+            if (_cards.TryGetValue(gatewayName, out var card))
+            {
+                card.UpdateStatus(connected);
+            }
         }
 
         private async void btnConnect_Click(object sender, EventArgs e)

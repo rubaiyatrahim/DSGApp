@@ -8,6 +8,10 @@ namespace DSGClient
      * */
     public sealed class DSGClient : IAsyncDisposable
     {
+        public event Action<string, string>? MessageReceived;
+        public event Action<string, bool> StatusChanged;
+
+
         // Connection state
         private volatile bool _connected;
         public bool IsConnected => _connected;
@@ -21,6 +25,7 @@ namespace DSGClient
 
         // Connection properties
         private readonly Gateway _gateway;
+        public string GatewayName => _gateway.GatewayName;
         private readonly List<MessageType> _messageTypes;
         private readonly int _heartbeatSeconds;
 
@@ -88,6 +93,7 @@ namespace DSGClient
             {
                 await SendAsync(XmlManager.BuildMessageLogin(_gateway.Username, _gateway.Password, _messageTypes));
                 Console.WriteLine(GATEWAY_TAG + "<< Login sent.");
+                StatusChanged.Invoke(_gateway.GatewayName, true);
             }
             catch (Exception ex)
             {
@@ -104,6 +110,7 @@ namespace DSGClient
             {
                 await SendAsync(XmlManager.BuildMessageLogout(_gateway.Username));
                 Console.WriteLine(GATEWAY_TAG + "<< Logout sent.");
+                StatusChanged.Invoke(_gateway.GatewayName, false);
             }
             catch (Exception ex)
             {
@@ -198,6 +205,9 @@ namespace DSGClient
                         accumulator.RemoveRange(0, fullMessageLength);      // Remove the full message from accumulator
 
                         Console.WriteLine($"{GATEWAY_TAG}>> Message Id: {messageId}, Sequence Number: {sequenceNumber}");
+
+                        MessageReceived?.Invoke(_gateway.GatewayName, messageId.ToString());
+
 
                         if (payload.Length == 0)
                         {
