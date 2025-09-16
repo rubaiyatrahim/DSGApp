@@ -19,9 +19,11 @@ namespace DSGTool
         private const string PASSWORD = "cse.123";
         private const int HEARTBEAT_INTERVAL_SECONDS = 2;
 
-        public MainForm() { InitializeComponent(); }
+        // Cards and stats dictionaries
         private Dictionary<string, GatewayCard> _cards = new();
         private Dictionary<string, GatewayStats> _stats = new();
+
+        public MainForm() { InitializeComponent(); }
         private async void MainForm_Load(object sender, EventArgs e)
         {
             // Create cancellation token
@@ -52,34 +54,12 @@ namespace DSGTool
                 var stats = new GatewayStats(gatewayName);
                 _stats[gatewayName] = stats;
 
-                //var card = new GatewayCard(gatewayName);
-                //card.StartClicked += OnStartClicked;
-                //card.DownloadClicked += OnDownloadClicked;
-                //card.StopClicked += OnStopClicked;
-
                 var card = new GatewayCard(gatewayName);
 
-                card.StartClicked += async gw =>
-                {
-                    var client = _clientPool.GetClientByGatewayName(gatewayName);
-                    await client.StartAsync(_cts.Token);
-                    card.UpdateStatus(true);
-                };
-
-                card.DownloadClicked += async gw =>
-                {
-                    var client = _clientPool.GetClientByGatewayName(gatewayName);
-                    await client.DownloadAsync("1", "1", "1000000");
-                };
-
-                card.StopClicked += async gw =>
-                {
-                    var client = _clientPool.GetClientByGatewayName(gatewayName);
-                    await client.StopAsync();
-                };
-
-                flowLayoutPanel1.Controls.Add(card);
-
+                card.StartClicked += async gw => await client.StartAsync(_cts.Token);
+                card.DownloadClicked += async gw => await client.DownloadAsync("1", "1", "1000000");
+                card.StopClicked += async gw => await client.StopAsync();
+            
                 flowLayoutPanel1.Controls.Add(card);
                 _cards[gatewayName] = card;
             }
@@ -87,23 +67,7 @@ namespace DSGTool
             _clientPool.MessageReceived += OnMessageReceived;
             _clientPool.StatusChanged += OnStatusChanged;
         }
-        //private async void OnStartClicked(string gatewayName)
-        //{
-        //    var client = _clientPool.GetClientByGatewayName(gatewayName);
-        //    await client.StartAsync(_cts.Token);
-        //}
 
-        //private async void OnDownloadClicked(string gatewayName)
-        //{
-        //    var client = _clientPool.GetClientByGatewayName(gatewayName);
-        //    await client.DownloadAsync("1", "1", "1000000");
-        //}
-
-        //private async void OnStopClicked(string gatewayName)
-        //{
-        //    var client = _clientPool.GetClientByGatewayName(gatewayName);
-        //    await client.StopAsync();
-        //}
         private void OnMessageReceived(string gatewayName, string msgType)
         {
             if (InvokeRequired)
@@ -116,7 +80,6 @@ namespace DSGTool
             {
                 stats.IncrementMessageCount(msgType);
 
-                //card.UpdateStatus(_clientPool.GetClientByGatewayName(gatewayName).IsConnected);
                 card.UpdateTotalCount(stats.TotalMessages);
                 card.UpdateMessageTypeCount(msgType, stats.GetCount(msgType));
             }
