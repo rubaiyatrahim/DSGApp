@@ -335,35 +335,44 @@ namespace DSGClient
         {
             try
             {
-                // Logout before stopping
-                if (_connected)
-                {
-                    try
-                    {
-                        await LogoutAsync();
-                        await Task.Delay(100); // ensure logout flushes
-                    }
-                    catch { /* ignore logout errors */ }
-                }
-
-                // Cancel per-connection CTS
+                // Cancel first so that read/heartbeat loops break immediately
                 _connectionCts?.Cancel();
 
-                // Check if the read loop is running and wait for it to finish
-                if (_readTask != null)
-                    await Task.WhenAll(
-                        _readTask.ContinueWith(_ => { }),
-                        _heartbeatTask?.ContinueWith(_ => { }) ?? Task.CompletedTask);
+                // Close connection instantly
+                try { _client?.Close(); } catch { }
+                try { _stream?.Close(); } catch { }
 
-                _connected = false;
+                // Try sending logout without blocking Stop
+                if (_connected && _cts is { IsCancellationRequested: false })
+                {
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await LogoutAsync();
+                            await Task.Delay(50); // tiny delay to flush
+                        }
+                        catch { }
+                    });
+                }
 
+                // Don't wait indefinitely for tasks; allow max 200 ms
+                if (_readTask != null || _heartbeatTask != null)
+                {
+                    var tasks = new List<Task>();
+                    if (_readTask != null) tasks.Add(_readTask);
+                    if (_heartbeatTask != null) tasks.Add(_heartbeatTask);
+                    await Task.WhenAny(Task.WhenAll(tasks), Task.Delay(200));
+                }
             }
             finally
             {
+                _connected = false;   // <--- Make sure this happens before notifying UI
+                StatusChanged?.Invoke(_gateway.GatewayName, false); // <--- Notify UI immediately
                 Cleanup();
             }
-            //catch { /* ignore */ }
         }
+
 
         /**
          * Dispose the DSG client asynchronously.

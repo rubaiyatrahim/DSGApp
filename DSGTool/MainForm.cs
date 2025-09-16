@@ -174,17 +174,21 @@ namespace DSGTool
         {
             try
             {
+                // Cancel application-wide token first for immediate effect
+                _cts?.Cancel();
+
                 if (_clientPool != null)
-                    await _clientPool.StopAllAsync();
+                {
+                    // Fire-and-forget stop to make UI responsive instantly
+                    var stopTask = _clientPool.StopAllAsync();
+                    await Task.WhenAny(stopTask, Task.Delay(200)); // wait max 200ms
+                }
             }
             catch (Exception ex)
             {
                 Log("Error during shutdown: " + ex.Message);
             }
-            finally
-            {
-                _cts?.Cancel();
-            }
         }
+
     }
 }
