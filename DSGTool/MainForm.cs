@@ -32,8 +32,8 @@ namespace DSGTool
             // Hook Console.WriteLine to Log() method
             Console.SetOut(new TextBoxWriter(Log));
 
-            Gateway gatewayOM = new Gateway("CSETEST1", "DSGOMGateway", HOST, 7530, USERID, PASSWORD);
-            Gateway gatewayMD = new Gateway("CSETEST1", "DSGMDGateway", HOST, 7536, USERID, PASSWORD);
+            Gateway gatewayOM = new Gateway("1", "CSETEST1", "DSGOMGateway", HOST, 7530, USERID, PASSWORD);
+            Gateway gatewayMD = new Gateway("1", "CSETEST1", "DSGMDGateway", HOST, 7536, USERID, PASSWORD);
 
             MessageType msgType_EXP_INDEX_WATCH = new MessageType("EXP_INDEX_WATCH", "15203", false),
                 msgType_EXP_STAT_UPDATE = new MessageType("EXP_STAT_UPDATE", "15355", false),
@@ -57,7 +57,7 @@ namespace DSGTool
                 var card = new GatewayCard(gatewayName);
 
                 card.StartClicked += async gw => await client.StartAsync(_cts.Token);
-                card.DownloadClicked += async gw => await client.DownloadAsync("1", "1", "1000000");
+                card.DownloadClicked += async gw => await client.DownloadAsync("1", "1000000");
                 card.StopClicked += async gw => await client.StopAsync();
             
                 flowLayoutPanel1.Controls.Add(card);
@@ -113,7 +113,7 @@ namespace DSGTool
         }
         
         private async void btnDownload_Click(object sender, EventArgs e) 
-            => await _clientPool.SendDownloadAllAsync("1", "1", "1000000");
+            => await _clientPool.SendDownloadAllAsync("1", "1000000");
         
         private async void btnHeartbeat_Click(object sender, EventArgs e)
         {

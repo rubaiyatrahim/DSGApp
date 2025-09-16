@@ -21,8 +21,8 @@
 
         public async Task StartAllAsync(CancellationToken appStop = default) 
             => await Task.WhenAll(_clients.Select(c => c.StartAsync(appStop)));
-        public async Task SendDownloadAllAsync(string partitionId, string startingSequenceNumber, string endingSequenceNumber) 
-            => await Task.WhenAll(_clients.Select(c => c.DownloadAsync(partitionId, startingSequenceNumber, endingSequenceNumber)));
+        public async Task SendDownloadAllAsync(string startingSequenceNumber, string endingSequenceNumber) 
+            => await Task.WhenAll(_clients.Select(c => c.DownloadAsync(startingSequenceNumber, endingSequenceNumber)));
         public async Task SendHeartbeatAllAsync() 
             => await Task.WhenAll(_clients.Select(c => c.SendHeartbeatAsync()));
         public async Task SendLogoutAllAsync() 

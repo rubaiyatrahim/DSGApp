@@ -70,9 +70,9 @@ namespace DSGClient
          * @param startingSequenceNumber: The starting sequence number to download.
          * @param endingSequenceNumber: The ending sequence number to download.
          * */
-        public async Task DownloadAsync(string partitionId, string startingSequenceNumber, string endingSequenceNumber)
+        public async Task DownloadAsync(string startingSequenceNumber, string endingSequenceNumber)
         {
-            await SendAsync(XmlManager.BuildMessageDownload(partitionId, startingSequenceNumber, endingSequenceNumber, _messageTypes));
+            await SendAsync(XmlManager.BuildMessageDownload(_gateway.PartitionId, startingSequenceNumber, endingSequenceNumber, _messageTypes));
             Console.WriteLine(GATEWAY_TAG + "<< Download request sent"
                 + " from sequence number " + startingSequenceNumber + " to " + endingSequenceNumber
                 + " for messages: " + _messageTypes.Select(x => x.MessageName).Aggregate((a, b) => a + ", " + b)
