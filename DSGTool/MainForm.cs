@@ -2,12 +2,9 @@
 
 namespace DSGTool
 {
-    /**
-     * Main form class.
-     * */
     public partial class MainForm : Form
     {
-        // DSG client
+        // DSG clients pool
         private DSGClientPool _clientPool;
 
         // Cancellation token
@@ -24,6 +21,7 @@ namespace DSGTool
         private Dictionary<string, GatewayStats> _stats = new();
 
         public MainForm() { InitializeComponent(); }
+
         private async void MainForm_Load(object sender, EventArgs e)
         {
             // Create cancellation token
@@ -32,6 +30,12 @@ namespace DSGTool
             // Hook Console.WriteLine to Log() method
             Console.SetOut(new TextBoxWriter(Log));
 
+            LoadClientsPool();
+            BuildCards();
+        }
+
+        private void LoadClientsPool()
+        {
             Gateway gatewayOM = new Gateway("1", "CSETEST1", "DSGOMGateway", HOST, 7530, USERID, PASSWORD);
             Gateway gatewayMD = new Gateway("1", "CSETEST1", "DSGMDGateway", HOST, 7536, USERID, PASSWORD);
 
@@ -41,9 +45,15 @@ namespace DSGTool
 
             // Create multi-client
             _clientPool = new DSGClientPool();
-            _clientPool.AddClient(gatewayOM, new List<MessageType> { msgType_EXP_INDEX_WATCH, msgType_EXP_STAT_UPDATE }, HEARTBEAT_INTERVAL_SECONDS);
-            _clientPool.AddClient(gatewayMD, new List<MessageType> { msgType_Announcement }, HEARTBEAT_INTERVAL_SECONDS);
+            _clientPool.AddClient(gatewayOM, new List<MessageType> { msgType_EXP_INDEX_WATCH, msgType_EXP_STAT_UPDATE }, "1", "1000000", HEARTBEAT_INTERVAL_SECONDS);
+            _clientPool.AddClient(gatewayMD, new List<MessageType> { msgType_Announcement }, "1", "1000000", HEARTBEAT_INTERVAL_SECONDS);
 
+            _clientPool.MessageReceived += OnMessageReceived;
+            _clientPool.StatusChanged += OnStatusChanged;
+        }
+
+        private void BuildCards()
+        {
             flowLayoutPanel1.WrapContents = true;
             flowLayoutPanel1.AutoScroll = true;
 
@@ -57,15 +67,12 @@ namespace DSGTool
                 var card = new GatewayCard(gatewayName);
 
                 card.StartClicked += async gw => await client.StartAsync(_cts.Token);
-                card.DownloadClicked += async gw => await client.DownloadAsync("1", "1000000");
+                card.DownloadClicked += async gw => await client.DownloadAsync();
                 card.StopClicked += async gw => await client.StopAsync();
-            
+
                 flowLayoutPanel1.Controls.Add(card);
                 _cards[gatewayName] = card;
             }
-
-            _clientPool.MessageReceived += OnMessageReceived;
-            _clientPool.StatusChanged += OnStatusChanged;
         }
 
         private void OnMessageReceived(string gatewayName, string msgType)
@@ -113,7 +120,7 @@ namespace DSGTool
         }
         
         private async void btnDownload_Click(object sender, EventArgs e) 
-            => await _clientPool.SendDownloadAllAsync("1", "1000000");
+            => await _clientPool.SendDownloadAllAsync();
         
         private async void btnHeartbeat_Click(object sender, EventArgs e)
         {

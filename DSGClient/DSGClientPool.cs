@@ -8,9 +8,9 @@
 
         public DSGClientPool() { }
         
-        public DSGClient AddClient(Gateway gateway, List<MessageType> messageTypes, int heartbeatSeconds = 2)
+        public DSGClient AddClient(Gateway gateway, List<MessageType> messageTypes, string startingSequenceNumber, string endingSequenceNumber, int heartbeatSeconds = 2)
         {
-            var client = new DSGClient(gateway, messageTypes, heartbeatSeconds);
+            var client = new DSGClient(gateway, messageTypes, startingSequenceNumber, endingSequenceNumber, heartbeatSeconds);
 
             client.MessageReceived += (clientGateName, messageType) => MessageReceived?.Invoke(clientGateName, messageType);
             client.StatusChanged += (clientGatewayName, connected) => StatusChanged?.Invoke(clientGatewayName, connected);
@@ -21,8 +21,8 @@
 
         public async Task StartAllAsync(CancellationToken appStop = default) 
             => await Task.WhenAll(_clients.Select(c => c.StartAsync(appStop)));
-        public async Task SendDownloadAllAsync(string startingSequenceNumber, string endingSequenceNumber) 
-            => await Task.WhenAll(_clients.Select(c => c.DownloadAsync(startingSequenceNumber, endingSequenceNumber)));
+        public async Task SendDownloadAllAsync() 
+            => await Task.WhenAll(_clients.Select(c => c.DownloadAsync()));
         public async Task SendHeartbeatAllAsync() 
             => await Task.WhenAll(_clients.Select(c => c.SendHeartbeatAsync()));
         public async Task SendLogoutAllAsync() 

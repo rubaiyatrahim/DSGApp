@@ -3,33 +3,14 @@ using System.Text;
 
 namespace DSGClient
 {
-    /**
-     * DSG client class.
-     * */
     public sealed class DSGClient : IAsyncDisposable
     {
-        public event Action<string, string>? MessageReceived;
-        public event Action<string, bool> StatusChanged;
-
-
-        // Connection state
         private volatile bool _connected;
-        public bool IsConnected => _connected;
-        
-        // Environment and gateway tag to prefix log messages
-        private string GATEWAY_TAG => "[" + _gateway.EnvironmentName + ":" + _gateway.GatewayName + "] ";
-
-        // Constants
-        private const int LENGTH_OUTERHEADER = 14;  // Length of outer header
-        private const int LENGTH_INNERHEADER = 16;  // Length of inner header
-
-        // Connection properties
         private readonly Gateway _gateway;
-        public string GatewayName => _gateway.GatewayName;
         private readonly List<MessageType> _messageTypes;
-        private readonly int _heartbeatSeconds;
-
-        // Connection objects
+        private int _heartbeatSeconds;
+        private string _startingSequenceNumber;
+        private string _endingSequenceNumber;
         private TcpClient _client;
         private NetworkStream _stream;
 
@@ -41,52 +22,42 @@ namespace DSGClient
         /// </summary>
         private SemaphoreSlim _sendLock; // = new(1, 1);
 
-        // Cancellation tokens
+        public event Action<string, string>? MessageReceived;
+        public event Action<string, bool> StatusChanged;
+
+        public bool IsConnected => _connected;
+        public string GatewayName => _gateway.GatewayName;
+        private string GATEWAY_TAG => "[" + _gateway.EnvironmentName + ":" + _gateway.GatewayName + "] ";
+
+        private const int LENGTH_OUTERHEADER = 14;  // Length of outer header
+        private const int LENGTH_INNERHEADER = 16;  // Length of inner header
+
         private CancellationTokenSource? _cts;              // cancel all
         private CancellationTokenSource? _connectionCts;    // cancel per-connection only
 
-        // Task handles
         private Task _readTask;         // Handle to the read task.
         private Task _heartbeatTask;    // Handle to the heartbeat task.
 
-        /**
-         * Constructor of the DSG Client class.
-         * 
-         * @param gateway: The gateway to connect to.
-         * @param messageTypes: The message types to subscribe to.
-         * @param heartbeatSeconds: The heartbeat interval in seconds.
-         * */
-        public DSGClient(Gateway gateway, List<MessageType> messageTypes, int heartbeatSeconds = 2)
+        public DSGClient(Gateway gateway, List<MessageType> messageTypes, string startingSequenceNumber, string endingSequenceNumber, int heartbeatSeconds = 2)
         {
             _gateway = gateway;
             _messageTypes = messageTypes;
+            _startingSequenceNumber = startingSequenceNumber;
+            _endingSequenceNumber = endingSequenceNumber;
             _heartbeatSeconds = heartbeatSeconds;
         }
 
-        /**
-         * Send a Download message to the DSG asynchronously.
-         * 
-         * @param partitionId: The partition ID to download.
-         * @param startingSequenceNumber: The starting sequence number to download.
-         * @param endingSequenceNumber: The ending sequence number to download.
-         * */
-        public async Task DownloadAsync(string startingSequenceNumber, string endingSequenceNumber)
+        public async Task DownloadAsync()
         {
-            await SendAsync(XmlManager.BuildMessageDownload(_gateway.PartitionId, startingSequenceNumber, endingSequenceNumber, _messageTypes));
+            await SendAsync(XmlManager.BuildMessageDownload(_gateway.PartitionId, _startingSequenceNumber, _endingSequenceNumber, _messageTypes));
             Console.WriteLine(GATEWAY_TAG + "<< Download request sent"
-                + " from sequence number " + startingSequenceNumber + " to " + endingSequenceNumber
+                + " from sequence number " + _startingSequenceNumber + " to " + _endingSequenceNumber
                 + " for messages: " + _messageTypes.Select(x => x.MessageName).Aggregate((a, b) => a + ", " + b)
                 + ".");
         }
 
-        /**
-         * Send a Heartbeat message to the DSG asynchronously.
-         * */
         public async Task SendHeartbeatAsync() => await SendAsync(XmlManager.BuildMessageHeartbeat());
 
-        /**
-         * Send a Login message to the DSG asynchronously.
-         * */
         public async Task LoginAsync()
         {
             try
@@ -101,9 +72,6 @@ namespace DSGClient
             }
         }
 
-        /**
-         * Send a Logout message to the DSG asynchronously.
-         * */
         public async Task LogoutAsync()
         {
             try
@@ -118,23 +86,14 @@ namespace DSGClient
             }
         }
 
-        /**
-         * Keep sending heartbeat messages to the DSG.
-         * 
-         * @param ct: CancellationToken to cancel the loop when the application is stopping.
-         * */
         private async Task LoopHeartbeatAsync(CancellationToken ct)
         {
-            // Exit if heartbeat interval is not set or is set to 0.
             if (_heartbeatSeconds <= 0) return;
-
             try
             {
-                // Set up a periodic timer to send heartbeats.
-                var timer = new PeriodicTimer(TimeSpan.FromSeconds(_heartbeatSeconds));
+                var timer = new PeriodicTimer(TimeSpan.FromSeconds(_heartbeatSeconds)); // Set up a periodic timer to send heartbeats.
 
-                // Loop sending heartbeats until cancelled.
-                while (await timer.WaitForNextTickAsync(ct))
+                while (await timer.WaitForNextTickAsync(ct)) // Loop sending heartbeats until cancelled.
                 {
                     try
                     {
@@ -151,11 +110,6 @@ namespace DSGClient
             catch (OperationCanceledException) { }
         }
 
-        /**
-         * Keep reading messages from the DSG.
-         * 
-         * @param ct: CancellationToken to cancel the loop when the application is stopping.
-         * */
         private async Task LoopReadAsync(CancellationToken ct)
         {
             List<byte> accumulator = new(); // Initialize an accumulator for receiving message bytes
@@ -205,9 +159,7 @@ namespace DSGClient
                         accumulator.RemoveRange(0, fullMessageLength);      // Remove the full message from accumulator
 
                         Console.WriteLine($"{GATEWAY_TAG}>> Message Id: {messageId}, Sequence Number: {sequenceNumber}");
-
                         MessageReceived?.Invoke(_gateway.GatewayName, messageId.ToString());
-
 
                         if (payload.Length == 0)
                         {
@@ -265,11 +217,6 @@ namespace DSGClient
             }
         }
 
-        /**
-         * Send a message to the DSG asynchronously.
-         * 
-         * @param payload: The message to send.
-         * */
         private async Task SendAsync(byte[] payload)
         {
             if (_stream is null || !_connected)
@@ -291,11 +238,6 @@ namespace DSGClient
             }
         }
 
-        /**
-         * Start the DSG client asynchronously and run until appStop is cancelled.
-         * 
-         * @param appStop: CancellationToken to cancel the DSG client when the application is stopping.
-         * */
         public async Task StartAsync(CancellationToken appStop)
         {
             // Clean up any old state (in case StopAsync wasn’t called)
@@ -311,26 +253,27 @@ namespace DSGClient
             _sendLock = new(1, 1);
 
             // Create a TCP client and connect to the DSG.
-            _client = new TcpClient();
-            Console.WriteLine($"Connecting to {_gateway.GatewayName} of environment {_gateway.EnvironmentName} at {_gateway.Host}:{_gateway.Port}...");
-            await _client.ConnectAsync(_gateway.Host, _gateway.Port);
-            _stream = _client.GetStream();
-            _connected = true;
-            Console.WriteLine(GATEWAY_TAG + "<< Connected.");
+            await ConnectAsync();
 
-            // Start the read loop on a background thread, let it run until _cts is cancelled, and keep a handle to that task in _readTask.
+            // Start the read and heartbeat loops in background, let those run until _cts is cancelled, and keep a handle to each task.
             _readTask = Task.Run(() => LoopReadAsync(_cts.Token), _cts.Token);
-            
-            // Start the heartbeat loop on a background thread, let it run until _cts is cancelled, and keep a handle to that task in _heartbeatTask.
             _heartbeatTask = Task.Run(() => LoopHeartbeatAsync(_cts.Token), _cts.Token);
 
             // Send the login message.
             await LoginAsync();
         }
 
-        /**
-         * Stop the DSG client asynchronously.
-         * */
+        private async Task ConnectAsync()
+        {
+            // Create a TCP client and connect to the DSG.
+            _client = new TcpClient();
+            Console.WriteLine($"Connecting to {_gateway.GatewayName} of environment {_gateway.EnvironmentName} at {_gateway.Host}:{_gateway.Port}...");
+            await _client.ConnectAsync(_gateway.Host, _gateway.Port);
+            _stream = _client.GetStream();
+            _connected = true;
+            Console.WriteLine(GATEWAY_TAG + "<< Connected.");
+        }
+
         public async Task StopAsync()
         {
             try
@@ -373,15 +316,8 @@ namespace DSGClient
             }
         }
 
-
-        /**
-         * Dispose the DSG client asynchronously.
-         * */
         public async ValueTask DisposeAsync() => await StopAsync();
 
-        /**
-         * Dispose all the open resources.
-         * */
         private void Cleanup()
         {
             try
