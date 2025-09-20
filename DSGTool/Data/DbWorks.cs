@@ -20,9 +20,9 @@ namespace DSGTool.Data
         // Gateway Methods
         // ===========================
 
-        public List<GatewayEntity> GetGateways()
+        public List<Gateway> GetGateways()
         {
-            var gateways = new List<GatewayEntity>();
+            var gateways = new List<Gateway>();
 
             using var conn = new SqlConnection(_connectionString);
             conn.Open();
@@ -32,7 +32,7 @@ namespace DSGTool.Data
 
             while (reader.Read())
             {
-                gateways.Add(new GatewayEntity(
+                gateways.Add(new Gateway(
                     Convert.ToInt32(reader["Id"].ToString()),
                     reader["PartitionId"].ToString(),
                     reader["EnvironmentName"].ToString(),
@@ -47,7 +47,7 @@ namespace DSGTool.Data
             return gateways;
         }
 
-        public int InsertGateway(GatewayEntity gateway)
+        public int InsertGateway(Gateway gateway)
         {
             using var conn = new SqlConnection(_connectionString);
             conn.Open();

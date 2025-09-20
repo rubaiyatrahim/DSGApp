@@ -67,8 +67,8 @@ namespace DSGTool
         private void LoadSampleData(ClientLoader loader)
         {
             // Add gateways
-            int g1 = loader.AddGateway(new GatewayEntity(null, "1", "CSETEST1", "DSGOMGateway", HOST, 7530, USERID, PASSWORD));
-            int g2 = loader.AddGateway(new GatewayEntity(null, "1", "CSETEST1", "DSGMDGateway", HOST, 7536, USERID, PASSWORD));
+            int g1 = loader.AddGateway(new Gateway(null, "1", "CSETEST1", "DSGOMGateway", HOST, 7530, USERID, PASSWORD));
+            int g2 = loader.AddGateway(new Gateway(null, "1", "CSETEST1", "DSGMDGateway", HOST, 7536, USERID, PASSWORD));
 
             // Add message types
             int m1 = loader.AddMessageType(new MessageTypeEntity(null, "EXP_INDEX_WATCH", "15203", false));
