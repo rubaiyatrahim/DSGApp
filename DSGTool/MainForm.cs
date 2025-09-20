@@ -1,4 +1,5 @@
 ﻿using DSGClient;
+using DSGTool.Data.Models;
 
 namespace DSGTool
 {
@@ -22,7 +23,7 @@ namespace DSGTool
 
         public MainForm() { InitializeComponent(); }
 
-        private async void MainForm_Load(object sender, EventArgs e)
+        private void MainForm_Load(object sender, EventArgs e)
         {
             // Create cancellation token
             _cts = new CancellationTokenSource();
@@ -36,6 +37,7 @@ namespace DSGTool
 
         private void LoadClientsPool()
         {
+            /*
             Gateway gatewayOM = new Gateway("1", "CSETEST1", "DSGOMGateway", HOST, 7530, USERID, PASSWORD);
             Gateway gatewayMD = new Gateway("1", "CSETEST1", "DSGMDGateway", HOST, 7536, USERID, PASSWORD);
 
@@ -50,6 +52,37 @@ namespace DSGTool
 
             _clientPool.MessageReceived += OnMessageReceived;
             _clientPool.StatusChanged += OnStatusChanged;
+            */
+
+            var loader = new ClientLoader();
+            
+            //loader.DeleteAllData();
+            //LoadSampleData(loader);
+
+            _clientPool = loader.LoadClients();
+            _clientPool.MessageReceived += OnMessageReceived;
+            _clientPool.StatusChanged += OnStatusChanged;
+        }
+
+        private void LoadSampleData(ClientLoader loader)
+        {
+            // Add gateways
+            int g1 = loader.AddGateway(new GatewayEntity(null, "1", "CSETEST1", "DSGOMGateway", HOST, 7530, USERID, PASSWORD));
+            int g2 = loader.AddGateway(new GatewayEntity(null, "1", "CSETEST1", "DSGMDGateway", HOST, 7536, USERID, PASSWORD));
+
+            // Add message types
+            int m1 = loader.AddMessageType(new MessageTypeEntity(null, "EXP_INDEX_WATCH", "15203", false));
+            int m2 = loader.AddMessageType(new MessageTypeEntity(null, "EXP_STAT_UPDATE", "15355", false));
+            int m3 = loader.AddMessageType(new MessageTypeEntity(null, "Announcement", "618", true));
+
+            // Add gateway message types
+            loader.AddGatewayMessageType(g1, m1);
+            loader.AddGatewayMessageType(g1, m2);
+            loader.AddGatewayMessageType(g2, m3);
+
+            // Add DSG clients
+            loader.AddDSGClient(new DSGClientEntity(null, g1, "1", "1000000", HEARTBEAT_INTERVAL_SECONDS));
+            loader.AddDSGClient(new DSGClientEntity(null, g2, "1", "1000000", HEARTBEAT_INTERVAL_SECONDS));
         }
 
         private void BuildCards()
