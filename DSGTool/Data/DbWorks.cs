@@ -1,7 +1,5 @@
 ﻿using DSGClient;
 using DSGTool.Data.Models;
-using System;
-using System.Collections.Generic;
 using System.Data;
 using Microsoft.Data.SqlClient;
 
@@ -48,57 +46,30 @@ namespace DSGTool.Data
         }
 
         public int InsertGateway(Gateway gateway)
-        {
-            using var conn = new SqlConnection(_connectionString);
-            conn.Open();
-
-            using var cmd = new SqlCommand(
-                "INSERT INTO Gateway(PartitionId, EnvironmentName, GatewayName, HostIp, Port, UserName, Password) " +
+            => ExecuteProcedure("INSERT INTO Gateway(PartitionId, EnvironmentName, GatewayName, HostIp, Port, UserName, Password) " +
                 "OUTPUT INSERTED.Id " +
                 "VALUES (@PartitionId, @EnvironmentName, @GatewayName, @HostIp, @Port, @UserName, @Password)",
-                conn);
-            cmd.Parameters.AddWithValue("@PartitionId", gateway.PartitionId);
-            cmd.Parameters.AddWithValue("@EnvironmentName", gateway.EnvironmentName);
-            cmd.Parameters.AddWithValue("@GatewayName", gateway.GatewayName);
-            cmd.Parameters.AddWithValue("@HostIp", gateway.Host);
-            cmd.Parameters.AddWithValue("@Port", Convert.ToInt32(gateway.Port));
-            cmd.Parameters.AddWithValue("@UserName", gateway.Username);
-            cmd.Parameters.AddWithValue("@Password", gateway.Password);
-
-            int newId = (int)cmd.ExecuteScalar();
-
-            return newId;
-        }
+                new SqlParameter("@PartitionId", gateway.PartitionId),
+                new SqlParameter("@EnvironmentName", gateway.EnvironmentName),
+                new SqlParameter("@GatewayName", gateway.GatewayName),
+                new SqlParameter("@HostIp", gateway.Host),
+                new SqlParameter("@Port", Convert.ToInt32(gateway.Port)),
+                new SqlParameter("@UserName", gateway.Username),
+                new SqlParameter("@Password", gateway.Password));
 
         public void UpdateGateway(Gateway gateway)
-        {
-            using var conn = new SqlConnection(_connectionString);
-            conn.Open();
-
-            using var cmd = new SqlCommand(
-                "UPDATE Gateway SET PartitionId = @partitionid, EnvironmentName = @environmentname, GatewayName = @gatewayname, HostIp = @hostip, Port = @port, UserName = @username, Password = @password WHERE Id = @id",
-                conn);
-            cmd.Parameters.AddWithValue("@Id", gateway.Id);
-            cmd.Parameters.AddWithValue("@PartitionId", gateway.PartitionId);
-            cmd.Parameters.AddWithValue("@EnvironmentName", gateway.EnvironmentName);
-            cmd.Parameters.AddWithValue("@GatewayName", gateway.GatewayName);
-            cmd.Parameters.AddWithValue("@HostIp", gateway.Host);
-            cmd.Parameters.AddWithValue("@Port", Convert.ToInt32(gateway.Port));
-            cmd.Parameters.AddWithValue("@UserName", gateway.Username);
-            cmd.Parameters.AddWithValue("@Password", gateway.Password);
-
-            cmd.ExecuteNonQuery();
-        }
+            => ExecuteProcedure("UPDATE Gateway SET PartitionId = @partitionid, EnvironmentName = @environmentname, GatewayName = @gatewayname, HostIp = @hostip, Port = @port, UserName = @username, Password = @password WHERE Id = @id",
+                new SqlParameter("@Id", gateway.Id),
+                new SqlParameter("@PartitionId", gateway.PartitionId),
+                new SqlParameter("@EnvironmentName", gateway.EnvironmentName),
+                new SqlParameter("@GatewayName", gateway.GatewayName),
+                new SqlParameter("@HostIp", gateway.Host),
+                new SqlParameter("@Port", Convert.ToInt32(gateway.Port)),
+                new SqlParameter("@UserName", gateway.Username),
+                new SqlParameter("@Password", gateway.Password));
 
         public void DeleteGateway(string gatewayId)
-        {
-            using var conn = new SqlConnection(_connectionString);
-            conn.Open();
-
-            using var cmd = new SqlCommand("DELETE FROM Gateway WHERE Id=@Id", conn);
-            cmd.Parameters.AddWithValue("@Id", gatewayId);
-            cmd.ExecuteNonQuery();
-        }
+            => ExecuteProcedure("DELETE FROM Gateway WHERE Id = @id", new SqlParameter("@id", gatewayId));
 
         // ===========================
         // MessageType Methods
@@ -128,54 +99,26 @@ namespace DSGTool.Data
         }
 
         public int InsertMessageType(MessageType messageType)
-        {
-            using var conn = new SqlConnection(_connectionString);
-            conn.Open();
-
-            using var cmd = new SqlCommand(
-                "INSERT INTO MessageType (Name, MessageId, IsSecMsg) " +
+            => ExecuteProcedure("INSERT INTO MessageType (Name, MessageId, IsSecMsg) " +
                 "OUTPUT INSERTED.Id " +
                 "VALUES (@Name, @MessageId, @IsSecMsg)",
-                conn);
-            cmd.Parameters.AddWithValue("@Name", messageType.Name);
-            cmd.Parameters.AddWithValue("@MessageId", messageType.MessageId);
-            cmd.Parameters.AddWithValue("@IsSecMsg", messageType.IsSecMsg);
-
-            int newId = (int)cmd.ExecuteScalar();
-
-            return newId;
-        }
+                new SqlParameter("@Name", messageType.Name),
+                new SqlParameter("@MessageId", messageType.MessageId),
+                new SqlParameter("@IsSecMsg", messageType.IsSecMsg));
 
         public void UpdateMessageType(MessageType messageType)
-        {
-            using var conn = new SqlConnection(_connectionString);
-            conn.Open();
-
-            using var cmd = new SqlCommand(
-                "UPDATE MessageType SET Name=@Name, MessageId=@MessageId, IsSecMsg=@IsSecMsg WHERE Id=@Id",
-                conn);
-            cmd.Parameters.AddWithValue("@Id", messageType.Id);
-            cmd.Parameters.AddWithValue("@Name", messageType.Name);
-            cmd.Parameters.AddWithValue("@MessageId", messageType.MessageId);
-            cmd.Parameters.AddWithValue("@IsSecMsg", messageType.IsSecMsg);
-
-            cmd.ExecuteNonQuery();
-        }
+            => ExecuteProcedure("UPDATE MessageType SET Name = @Name, MessageId = @MessageId, IsSecMsg = @IsSecMsg WHERE Id = @Id",
+                new SqlParameter("@Id", messageType.Id),
+                new SqlParameter("@Name", messageType.Name),
+                new SqlParameter("@MessageId", messageType.MessageId),
+                new SqlParameter("@IsSecMsg", messageType.IsSecMsg));
 
         public void DeleteMessageType(int id)
-        {
-            using var conn = new SqlConnection(_connectionString);
-            conn.Open();
-
-            using var cmd = new SqlCommand("DELETE FROM MessageType WHERE Id=@Id", conn);
-            cmd.Parameters.AddWithValue("@Id", id);
-            cmd.ExecuteNonQuery();
-        }
+            => ExecuteProcedure("DELETE FROM MessageType WHERE Id = @id", new SqlParameter("@id", id));
 
         // ===============================
         // Gateway MessageType Map Methods
         // ===============================
-
 
         public List<int> GetMessageTypeIdsForGateway(int gatewayId)
         {
@@ -197,38 +140,20 @@ namespace DSGTool.Data
         }
 
         public void InsertGatewayMessageType(int gatewayId, int messageTypeId)
-        {
-            using var conn = new SqlConnection(_connectionString);
-            conn.Open();
-
-            using var cmd = new SqlCommand(
-                "INSERT INTO GatewayMessageType (GatewayId, MessageTypeId) VALUES (@GatewayId, @MessageTypeId)",
-                conn);
-            cmd.Parameters.AddWithValue("@GatewayId", gatewayId);
-            cmd.Parameters.AddWithValue("@MessageTypeId", messageTypeId);
-
-            cmd.ExecuteNonQuery();
-        }
+            => ExecuteProcedure("INSERT INTO GatewayMessageType (GatewayId, MessageTypeId) VALUES (@GatewayId, @MessageTypeId)",
+                new SqlParameter("@GatewayId", gatewayId),
+                new SqlParameter("@MessageTypeId", messageTypeId));
 
         public void DeleteGatewayMessageType(int gatewayId, int messageTypeId)
-        {
-            using var conn = new SqlConnection(_connectionString);
-            conn.Open();
-
-            using var cmd = new SqlCommand(
-                "DELETE FROM GatewayMessageType WHERE GatewayId=@GatewayId AND MessageTypeId=@MessageTypeId",
-                conn);
-            cmd.Parameters.AddWithValue("@GatewayId", gatewayId);
-            cmd.Parameters.AddWithValue("@MessageTypeId", messageTypeId);
-
-            cmd.ExecuteNonQuery();
-        }
+            => ExecuteProcedure("DELETE FROM GatewayMessageType WHERE GatewayId=@GatewayId AND MessageTypeId=@MessageTypeId",
+                new SqlParameter("@GatewayId", gatewayId),
+                new SqlParameter("@MessageTypeId", messageTypeId));
 
         // ===========================
         // DSG Client Methods
         // ===========================
 
-        public List<DSGClientEntity> GetDSGClients()
+        public List<DSGClientEntity> GetDSGClientEntities()
         {
             var dsgClients = new List<DSGClientEntity>();
 
@@ -253,51 +178,23 @@ namespace DSGTool.Data
         }
 
         public int InsertDSGClient(DSGClientEntity dsgClient)
-        {
-            using var conn = new SqlConnection(_connectionString);
-            conn.Open();
-
-            using var cmd = new SqlCommand(
-                "INSERT INTO DSGClient(GatewayId, StartingSequenceNumber, EndingSequenceNumber, HeartbeatIntervalSeconds) " +
+            => ExecuteProcedure("INSERT INTO DSGClient(GatewayId, StartingSequenceNumber, EndingSequenceNumber, HeartbeatIntervalSeconds) " +
                 "OUTPUT INSERTED.Id " +
                 "VALUES (@gatewayid, @startingsequencenumber, @endingsequencenumber, @heartbeatintervalseconds)",
-                conn);
-            cmd.Parameters.AddWithValue("@gatewayid", dsgClient.GatewayId);
-            cmd.Parameters.AddWithValue("@startingsequencenumber", dsgClient.StartingSequenceNumber);
-            cmd.Parameters.AddWithValue("@endingsequencenumber", dsgClient.EndingSequenceNumber);
-            cmd.Parameters.AddWithValue("@heartbeatintervalseconds", dsgClient.HeartbeatIntervalSeconds);
-
-            int newId = (int)cmd.ExecuteScalar();
-
-            return newId;
-        }
+                new SqlParameter("@gatewayid", dsgClient));
 
         public void UpdateDSGClient(DSGClientEntity dsgClient)
-        {
-            using var conn = new SqlConnection(_connectionString);
-            conn.Open();
-
-            using var cmd = new SqlCommand(
-                "UPDATE DSGClient SET GatewayId = @gatewayid, StartingSequenceNumber = @startingsequencenumber, EndingSequenceNumber = @endingsequencenumber, HeartbeatIntervalSeconds = @heartbeatintervalseconds WHERE Id = @id",
-                conn);
-            cmd.Parameters.AddWithValue("@id", dsgClient.Id);
-            cmd.Parameters.AddWithValue("@gatewayid", dsgClient.GatewayId);
-            cmd.Parameters.AddWithValue("@startingsequencenumber", dsgClient.StartingSequenceNumber);
-            cmd.Parameters.AddWithValue("@endingsequencenumber", dsgClient.EndingSequenceNumber);
-            cmd.Parameters.AddWithValue("@heartbeatintervalseconds", dsgClient.HeartbeatIntervalSeconds);
-
-            cmd.ExecuteNonQuery();
-        }
+            => ExecuteProcedure("UPDATE DSGClient SET GatewayId = @gatewayid, StartingSequenceNumber = @startingsequencenumber, EndingSequenceNumber = @endingsequencenumber, HeartbeatIntervalSeconds = @heartbeatintervalseconds WHERE Id = @id",
+                new SqlParameter("@id", dsgClient.Id),
+                new SqlParameter("@gatewayid", dsgClient.GatewayId),
+                new SqlParameter("@startingsequencenumber", dsgClient.StartingSequenceNumber),
+                new SqlParameter("@endingsequencenumber", dsgClient.EndingSequenceNumber),
+                new SqlParameter("@heartbeatintervalseconds", dsgClient.HeartbeatIntervalSeconds)
+            );
 
         public void DeleteDSGClient(string dsgClientId)
-        {
-            using var conn = new SqlConnection(_connectionString);
-            conn.Open();
-
-            using var cmd = new SqlCommand("DELETE FROM DSGClient WHERE Id=@Id", conn);
-            cmd.Parameters.AddWithValue("@Id", dsgClientId);
-            cmd.ExecuteNonQuery();
-        }
+            => ExecuteProcedure("DELETE FROM DSGClient WHERE Id = @id", new SqlParameter("@id", dsgClientId));
+        
 
         // =============================
         // Execute SQL Stored Procedures
@@ -317,7 +214,7 @@ namespace DSGTool.Data
             int rowsAffected = cmd.ExecuteNonQuery();
             return rowsAffected;
         }
-        public void DeleteAllData()
+        public void DeleteAllMasterData()
         {
             ExecuteProcedure("usp_ClearAll");
         }

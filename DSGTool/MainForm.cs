@@ -37,34 +37,33 @@ namespace DSGTool
 
         private void LoadClientsPool()
         {
-            /*
-            Gateway gatewayOM = new Gateway("1", "CSETEST1", "DSGOMGateway", HOST, 7530, USERID, PASSWORD);
-            Gateway gatewayMD = new Gateway("1", "CSETEST1", "DSGMDGateway", HOST, 7536, USERID, PASSWORD);
-
-            MessageType msgType_EXP_INDEX_WATCH = new MessageType("EXP_INDEX_WATCH", "15203", false),
-                msgType_EXP_STAT_UPDATE = new MessageType("EXP_STAT_UPDATE", "15355", false),
-                msgType_Announcement = new MessageType("Announcement", "618", true);
-
-            // Create multi-client
-            _clientPool = new DSGClientPool();
-            _clientPool.AddClient(gatewayOM, new List<MessageType> { msgType_EXP_INDEX_WATCH, msgType_EXP_STAT_UPDATE }, "1", "1000000", HEARTBEAT_INTERVAL_SECONDS);
-            _clientPool.AddClient(gatewayMD, new List<MessageType> { msgType_Announcement }, "1", "1000000", HEARTBEAT_INTERVAL_SECONDS);
-
-            _clientPool.MessageReceived += OnMessageReceived;
-            _clientPool.StatusChanged += OnStatusChanged;
-            */
-
             var loader = new ClientLoader();
-            
-            //loader.DeleteAllData();
-            //LoadSampleData(loader);
+
+            //LoadSampleDataFromCode();
+            //loader.DeleteAllMasterData();
+            //LoadSampleDataFromDb(loader);
 
             _clientPool = loader.LoadClients();
             _clientPool.MessageReceived += OnMessageReceived;
             _clientPool.StatusChanged += OnStatusChanged;
         }
 
-        private void LoadSampleData(ClientLoader loader)
+        private void LoadSampleDataFromCode()
+        {
+            Gateway gatewayOM = new Gateway(null, "1", "CSETEST1", "DSGOMGateway", HOST, 7530, USERID, PASSWORD);
+            Gateway gatewayMD = new Gateway(null, "1", "CSETEST1", "DSGMDGateway", HOST, 7536, USERID, PASSWORD);
+
+            MessageType msgType_EXP_INDEX_WATCH = new MessageType(null, "EXP_INDEX_WATCH", "15203", false),
+                msgType_EXP_STAT_UPDATE = new MessageType(null, "EXP_STAT_UPDATE", "15355", false),
+                msgType_Announcement = new MessageType(null, "Announcement", "618", true);
+
+            // Create multi-client
+            _clientPool = new DSGClientPool();
+            _clientPool.AddClient(gatewayOM, new List<MessageType> { msgType_EXP_INDEX_WATCH, msgType_EXP_STAT_UPDATE }, "1", "1000000", HEARTBEAT_INTERVAL_SECONDS);
+            _clientPool.AddClient(gatewayMD, new List<MessageType> { msgType_Announcement }, "1", "1000000", HEARTBEAT_INTERVAL_SECONDS);
+        }
+
+        private void LoadSampleDataFromDb(ClientLoader loader)
         {
             // Add gateways
             int g1 = loader.AddGateway(new Gateway(null, "1", "CSETEST1", "DSGOMGateway", HOST, 7530, USERID, PASSWORD));

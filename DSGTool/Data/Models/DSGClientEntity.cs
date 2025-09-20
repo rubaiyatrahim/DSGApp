@@ -10,11 +10,7 @@
 
         public DSGClientEntity(int? id, int gatewayId, string startingSequenceNumber, string endingSequenceNumber, int heartbeatIntervalSeconds)
         {
-            if (id != null)
-            {
-                Id = (int)id;
-            }
-
+            if (id != null) Id = (int)id;
             GatewayId = gatewayId;
             StartingSequenceNumber = startingSequenceNumber;
             EndingSequenceNumber = endingSequenceNumber;

@@ -17,7 +17,7 @@ public class ClientLoader
     {
         var gateways = _db.GetGateways();
         var messageTypes = _db.GetMessageTypes();
-        var clients = _db.GetDSGClients();
+        var clients = _db.GetDSGClientEntities();
         
         var clientPool = new DSGClientPool();
 
@@ -25,8 +25,9 @@ public class ClientLoader
         {
             List<int> gatewayMessageTypeIds = GetMessageTypeIdsForGateway(client.GatewayId);
             var gatewayMessageTypes = messageTypes.Where(mt => gatewayMessageTypeIds.Contains(mt.Id)).ToList();
+            var gatewayClient = gateways.Single(x => x.Id == client.GatewayId);
             clientPool.AddClient(
-                gateways.Single(x => x.Id == client.GatewayId),
+                gatewayClient,
                 gatewayMessageTypes,
                 client.StartingSequenceNumber,
                 client.EndingSequenceNumber,
@@ -40,7 +41,7 @@ public class ClientLoader
     public int AddGateway(Gateway g) => _db.InsertGateway(g);
     public int AddMessageType(MessageType mt) => _db.InsertMessageType(mt);
     public void AddGatewayMessageType(int gId, int mId) => _db.InsertGatewayMessageType(gId, mId);
-    public void DeleteAllData() => _db.DeleteAllData();
+    public void DeleteAllMasterData() => _db.DeleteAllMasterData();
     public int AddDSGClient(DSGClientEntity dce) => _db.InsertDSGClient(dce);
     private List<int> GetMessageTypeIdsForGateway(int gId) => _db.GetMessageTypeIdsForGateway(gId);
 }
