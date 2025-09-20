@@ -2,17 +2,20 @@
 {
     public class MessageType
     {        
-        public string MessageName { get => _messageName; set => _messageName = value; }
+        public int Id { get => _id; set => _id = value; }
+        public string Name { get => _name; set => _name = value; }
         public string MessageId { get => _messageId; set => _messageId = value; }
         public bool IsSecMsg { get => _isSecMsg; set => _isSecMsg = value; }
 
-        private string _messageName = string.Empty;
+        private int _id;
+        private string _name = string.Empty;
         private string _messageId = string.Empty;
         private bool _isSecMsg = false;
         
-        public MessageType(string messageName, string messageId, bool isSecMsg)
+        public MessageType(int? id, string name, string messageId, bool isSecMsg)
         {
-            MessageName = messageName;
+            if (id != null) _id = (int)id;
+            Name = name;
             MessageId = messageId;
             IsSecMsg = isSecMsg;
         }

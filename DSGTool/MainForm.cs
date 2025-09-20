@@ -71,9 +71,9 @@ namespace DSGTool
             int g2 = loader.AddGateway(new Gateway(null, "1", "CSETEST1", "DSGMDGateway", HOST, 7536, USERID, PASSWORD));
 
             // Add message types
-            int m1 = loader.AddMessageType(new MessageTypeEntity(null, "EXP_INDEX_WATCH", "15203", false));
-            int m2 = loader.AddMessageType(new MessageTypeEntity(null, "EXP_STAT_UPDATE", "15355", false));
-            int m3 = loader.AddMessageType(new MessageTypeEntity(null, "Announcement", "618", true));
+            int m1 = loader.AddMessageType(new MessageType(null, "EXP_INDEX_WATCH", "15203", false));
+            int m2 = loader.AddMessageType(new MessageType(null, "EXP_STAT_UPDATE", "15355", false));
+            int m3 = loader.AddMessageType(new MessageType(null, "Announcement", "618", true));
 
             // Add gateway message types
             loader.AddGatewayMessageType(g1, m1);

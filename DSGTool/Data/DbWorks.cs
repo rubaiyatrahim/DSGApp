@@ -60,9 +60,9 @@ namespace DSGTool.Data
             cmd.Parameters.AddWithValue("@PartitionId", gateway.PartitionId);
             cmd.Parameters.AddWithValue("@EnvironmentName", gateway.EnvironmentName);
             cmd.Parameters.AddWithValue("@GatewayName", gateway.GatewayName);
-            cmd.Parameters.AddWithValue("@HostIp", gateway.HostIp);
+            cmd.Parameters.AddWithValue("@HostIp", gateway.Host);
             cmd.Parameters.AddWithValue("@Port", Convert.ToInt32(gateway.Port));
-            cmd.Parameters.AddWithValue("@UserName", gateway.UserName);
+            cmd.Parameters.AddWithValue("@UserName", gateway.Username);
             cmd.Parameters.AddWithValue("@Password", gateway.Password);
 
             int newId = (int)cmd.ExecuteScalar();
@@ -70,7 +70,7 @@ namespace DSGTool.Data
             return newId;
         }
 
-        public void UpdateGateway(GatewayEntity gateway)
+        public void UpdateGateway(Gateway gateway)
         {
             using var conn = new SqlConnection(_connectionString);
             conn.Open();
@@ -82,9 +82,9 @@ namespace DSGTool.Data
             cmd.Parameters.AddWithValue("@PartitionId", gateway.PartitionId);
             cmd.Parameters.AddWithValue("@EnvironmentName", gateway.EnvironmentName);
             cmd.Parameters.AddWithValue("@GatewayName", gateway.GatewayName);
-            cmd.Parameters.AddWithValue("@HostIp", gateway.HostIp);
+            cmd.Parameters.AddWithValue("@HostIp", gateway.Host);
             cmd.Parameters.AddWithValue("@Port", Convert.ToInt32(gateway.Port));
-            cmd.Parameters.AddWithValue("@UserName", gateway.UserName);
+            cmd.Parameters.AddWithValue("@UserName", gateway.Username);
             cmd.Parameters.AddWithValue("@Password", gateway.Password);
 
             cmd.ExecuteNonQuery();
@@ -104,9 +104,9 @@ namespace DSGTool.Data
         // MessageType Methods
         // ===========================
 
-        public List<MessageTypeEntity> GetMessageTypes()
+        public List<MessageType> GetMessageTypes()
         {
-            var messageTypes = new List<MessageTypeEntity>();
+            var messageTypes = new List<MessageType>();
 
             using var conn = new SqlConnection(_connectionString);
             conn.Open();
@@ -116,7 +116,7 @@ namespace DSGTool.Data
 
             while (reader.Read())
             {
-                messageTypes.Add(new MessageTypeEntity(
+                messageTypes.Add(new MessageType(
                     Convert.ToInt32(reader["Id"].ToString()),
                     reader["Name"].ToString(),
                     reader["MessageId"].ToString(),
@@ -127,7 +127,7 @@ namespace DSGTool.Data
             return messageTypes;
         }
 
-        public int InsertMessageType(MessageTypeEntity messageType)
+        public int InsertMessageType(MessageType messageType)
         {
             using var conn = new SqlConnection(_connectionString);
             conn.Open();
@@ -146,7 +146,7 @@ namespace DSGTool.Data
             return newId;
         }
 
-        public void UpdateMessageType(MessageTypeEntity messageType)
+        public void UpdateMessageType(MessageType messageType)
         {
             using var conn = new SqlConnection(_connectionString);
             conn.Open();
