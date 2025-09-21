@@ -150,10 +150,10 @@ namespace DSGTool
                 Log("Connection error: " + ex.Message);
             }
         }
-        
-        private async void btnDownload_Click(object sender, EventArgs e) 
+
+        private async void btnDownload_Click(object sender, EventArgs e)
             => await _clientPool.SendDownloadAllAsync();
-        
+
         private async void btnHeartbeat_Click(object sender, EventArgs e)
         {
             try
@@ -167,10 +167,10 @@ namespace DSGTool
             }
         }
 
-        private async void btnStop_Click(object sender, EventArgs e) => await StopAllAsync();            
-                
+        private async void btnStop_Click(object sender, EventArgs e) => await StopAllAsync();
+
         private async void btnQuit_Click(object sender, EventArgs e) => Close();
-        
+
         /**
          * Log a message to the text box.
          * 
@@ -229,5 +229,13 @@ namespace DSGTool
             }
         }
 
+        private void btnDbManager_Click(object sender, EventArgs e)
+        {
+            // Pass your connection string here
+            string connectionString = "Server=192.168.102.15;Database=DSGData;User Id=rubaiyat;Password=12345;TrustServerCertificate=True;";
+
+            using var form = new Config.DbCrudManagerForm(connectionString);
+            form.ShowDialog(); // Modal dialog
+        }
     }
 }

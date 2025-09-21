@@ -46,7 +46,7 @@ namespace DSGTool.Data
         }
 
         public int InsertGateway(Gateway gateway)
-            => ExecuteProcedure("INSERT INTO Gateway(PartitionId, EnvironmentName, GatewayName, HostIp, Port, UserName, Password) " +
+            => ExecuteSql("INSERT INTO Gateway(PartitionId, EnvironmentName, GatewayName, HostIp, Port, UserName, Password) " +
                 "OUTPUT INSERTED.Id " +
                 "VALUES (@PartitionId, @EnvironmentName, @GatewayName, @HostIp, @Port, @UserName, @Password)",
                 new SqlParameter("@PartitionId", gateway.PartitionId),
@@ -58,7 +58,7 @@ namespace DSGTool.Data
                 new SqlParameter("@Password", gateway.Password));
 
         public void UpdateGateway(Gateway gateway)
-            => ExecuteProcedure("UPDATE Gateway SET PartitionId = @partitionid, EnvironmentName = @environmentname, GatewayName = @gatewayname, HostIp = @hostip, Port = @port, UserName = @username, Password = @password WHERE Id = @id",
+            => ExecuteSql("UPDATE Gateway SET PartitionId = @partitionid, EnvironmentName = @environmentname, GatewayName = @gatewayname, HostIp = @hostip, Port = @port, UserName = @username, Password = @password WHERE Id = @id",
                 new SqlParameter("@Id", gateway.Id),
                 new SqlParameter("@PartitionId", gateway.PartitionId),
                 new SqlParameter("@EnvironmentName", gateway.EnvironmentName),
@@ -69,7 +69,7 @@ namespace DSGTool.Data
                 new SqlParameter("@Password", gateway.Password));
 
         public void DeleteGateway(string gatewayId)
-            => ExecuteProcedure("DELETE FROM Gateway WHERE Id = @id", new SqlParameter("@id", gatewayId));
+            => ExecuteSql("DELETE FROM Gateway WHERE Id = @id", new SqlParameter("@id", gatewayId));
 
         // ===========================
         // MessageType Methods
@@ -99,7 +99,7 @@ namespace DSGTool.Data
         }
 
         public int InsertMessageType(MessageType messageType)
-            => ExecuteProcedure("INSERT INTO MessageType (Name, MessageId, IsSecMsg) " +
+            => ExecuteSql("INSERT INTO MessageType (Name, MessageId, IsSecMsg) " +
                 "OUTPUT INSERTED.Id " +
                 "VALUES (@Name, @MessageId, @IsSecMsg)",
                 new SqlParameter("@Name", messageType.Name),
@@ -107,14 +107,14 @@ namespace DSGTool.Data
                 new SqlParameter("@IsSecMsg", messageType.IsSecMsg));
 
         public void UpdateMessageType(MessageType messageType)
-            => ExecuteProcedure("UPDATE MessageType SET Name = @Name, MessageId = @MessageId, IsSecMsg = @IsSecMsg WHERE Id = @Id",
+            => ExecuteSql("UPDATE MessageType SET Name = @Name, MessageId = @MessageId, IsSecMsg = @IsSecMsg WHERE Id = @Id",
                 new SqlParameter("@Id", messageType.Id),
                 new SqlParameter("@Name", messageType.Name),
                 new SqlParameter("@MessageId", messageType.MessageId),
                 new SqlParameter("@IsSecMsg", messageType.IsSecMsg));
 
         public void DeleteMessageType(int id)
-            => ExecuteProcedure("DELETE FROM MessageType WHERE Id = @id", new SqlParameter("@id", id));
+            => ExecuteSql("DELETE FROM MessageType WHERE Id = @id", new SqlParameter("@id", id));
 
         // ===============================
         // Gateway MessageType Map Methods
@@ -140,12 +140,12 @@ namespace DSGTool.Data
         }
 
         public void InsertGatewayMessageType(int gatewayId, int messageTypeId)
-            => ExecuteProcedure("INSERT INTO GatewayMessageType (GatewayId, MessageTypeId) VALUES (@GatewayId, @MessageTypeId)",
+            => ExecuteSql("INSERT INTO GatewayMessageType (GatewayId, MessageTypeId) VALUES (@GatewayId, @MessageTypeId)",
                 new SqlParameter("@GatewayId", gatewayId),
                 new SqlParameter("@MessageTypeId", messageTypeId));
 
         public void DeleteGatewayMessageType(int gatewayId, int messageTypeId)
-            => ExecuteProcedure("DELETE FROM GatewayMessageType WHERE GatewayId=@GatewayId AND MessageTypeId=@MessageTypeId",
+            => ExecuteSql("DELETE FROM GatewayMessageType WHERE GatewayId=@GatewayId AND MessageTypeId=@MessageTypeId",
                 new SqlParameter("@GatewayId", gatewayId),
                 new SqlParameter("@MessageTypeId", messageTypeId));
 
@@ -178,13 +178,13 @@ namespace DSGTool.Data
         }
 
         public int InsertDSGClient(DSGClientEntity dsgClient)
-            => ExecuteProcedure("INSERT INTO DSGClient(GatewayId, StartingSequenceNumber, EndingSequenceNumber, HeartbeatIntervalSeconds) " +
+            => ExecuteSql("INSERT INTO DSGClient(GatewayId, StartingSequenceNumber, EndingSequenceNumber, HeartbeatIntervalSeconds) " +
                 "OUTPUT INSERTED.Id " +
                 "VALUES (@gatewayid, @startingsequencenumber, @endingsequencenumber, @heartbeatintervalseconds)",
                 new SqlParameter("@gatewayid", dsgClient));
 
         public void UpdateDSGClient(DSGClientEntity dsgClient)
-            => ExecuteProcedure("UPDATE DSGClient SET GatewayId = @gatewayid, StartingSequenceNumber = @startingsequencenumber, EndingSequenceNumber = @endingsequencenumber, HeartbeatIntervalSeconds = @heartbeatintervalseconds WHERE Id = @id",
+            => ExecuteSql("UPDATE DSGClient SET GatewayId = @gatewayid, StartingSequenceNumber = @startingsequencenumber, EndingSequenceNumber = @endingsequencenumber, HeartbeatIntervalSeconds = @heartbeatintervalseconds WHERE Id = @id",
                 new SqlParameter("@id", dsgClient.Id),
                 new SqlParameter("@gatewayid", dsgClient.GatewayId),
                 new SqlParameter("@startingsequencenumber", dsgClient.StartingSequenceNumber),
@@ -193,7 +193,7 @@ namespace DSGTool.Data
             );
 
         public void DeleteDSGClient(string dsgClientId)
-            => ExecuteProcedure("DELETE FROM DSGClient WHERE Id = @id", new SqlParameter("@id", dsgClientId));
+            => ExecuteSql("DELETE FROM DSGClient WHERE Id = @id", new SqlParameter("@id", dsgClientId));
         
 
         // =============================
@@ -214,6 +214,25 @@ namespace DSGTool.Data
             int rowsAffected = cmd.ExecuteNonQuery();
             return rowsAffected;
         }
+        public int ExecuteSql(string sql, params SqlParameter[] parameters)
+        {
+            using var conn = new SqlConnection(_connectionString);
+            conn.Open();
+
+            using var cmd = new SqlCommand(sql, conn)
+            {
+                CommandType = CommandType.Text // optional, default is Text
+            };
+
+            if (parameters != null)
+            {
+                cmd.Parameters.AddRange(parameters);
+            }
+
+            int rowsAffected = cmd.ExecuteNonQuery();
+            return rowsAffected;
+        }
+
         public void DeleteAllMasterData()
         {
             ExecuteProcedure("usp_ClearAll");

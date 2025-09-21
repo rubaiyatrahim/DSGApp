@@ -25,6 +25,7 @@
             txtLog = new RichTextBox();
             btnConnect = new Button();
             flowLayoutPanel1 = new FlowLayoutPanel();
+            btnDbManager = new Button();
             SuspendLayout();
             // 
             // btnDownload
@@ -90,9 +91,20 @@
             flowLayoutPanel1.Size = new Size(1301, 287);
             flowLayoutPanel1.TabIndex = 6;
             // 
+            // btnDbManager
+            // 
+            btnDbManager.Location = new Point(625, 12);
+            btnDbManager.Name = "btnDbManager";
+            btnDbManager.Size = new Size(104, 30);
+            btnDbManager.TabIndex = 7;
+            btnDbManager.Text = "Config";
+            btnDbManager.UseVisualStyleBackColor = true;
+            btnDbManager.Click += btnDbManager_Click;
+            // 
             // MainForm
             // 
             ClientSize = new Size(1327, 550);
+            Controls.Add(btnDbManager);
             Controls.Add(flowLayoutPanel1);
             Controls.Add(btnConnect);
             Controls.Add(btnDownload);
@@ -107,5 +119,6 @@
         }
         private Button btnConnect;
         private FlowLayoutPanel flowLayoutPanel1;
+        private Button btnDbManager;
     }
 }
