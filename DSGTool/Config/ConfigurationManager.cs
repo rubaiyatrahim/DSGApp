@@ -8,7 +8,7 @@ using System.Windows.Forms;
 
 namespace DSGTool.Config
 {
-    public class DbCrudManagerForm : Form
+    public class ConfigurationManager : Form
     {
         private readonly DbWorks _dbWorks;
 
@@ -17,7 +17,7 @@ namespace DSGTool.Config
         private DataGridView dgvDSGClients;
         private DataGridView dgvGatewayMessageMap;
 
-        public DbCrudManagerForm(string connectionString)
+        public ConfigurationManager(string connectionString)
         {
             _dbWorks = new DbWorks(connectionString);
             Width = 1000; Height = 600;
