@@ -8,7 +8,7 @@ using System.Windows.Forms;
 
 namespace DSGTool.Config
 {
-    public class DbCrudManagerForm : Form
+    public class ConfigurationManager : Form
     {
         private readonly DbWorks _dbWorks;
 
@@ -17,11 +17,13 @@ namespace DSGTool.Config
         private DataGridView dgvDSGClients;
         private DataGridView dgvGatewayMessageMap;
 
-        public DbCrudManagerForm(string connectionString)
+        public ConfigurationManager(string connectionString)
         {
             _dbWorks = new DbWorks(connectionString);
-            Width = 1000; Height = 600;
-            Text = "Configuration Manager";
+            Text = "⚙️ Configuration Manager";
+            Width = 1200; Height = 700;
+            StartPosition = FormStartPosition.CenterScreen;
+            MinimumSize = new Size(900, 600);
 
             BuildUI();
             LoadAllData();
@@ -29,8 +31,11 @@ namespace DSGTool.Config
 
         private void BuildUI()
         {
-            var tabControl = new TabControl { Dock = DockStyle.Fill };
-
+            var tabControl = new TabControl
+            {
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 9, FontStyle.Regular)
+            };
             dgvGateways = BuildGrid(new[] { "Id", "PartitionId", "EnvironmentName", "GatewayName", "HostIp", "Port", "UserName", "Password" });
             dgvMessageTypes = BuildGrid(new[] { "Id", "Name", "MessageId", "IsSecMsg" });
             dgvDSGClients = BuildGrid(new[] { "Id", "GatewayId", "StartingSequenceNumber", "EndingSequenceNumber", "HeartbeatIntervalSeconds" });
@@ -59,7 +64,20 @@ namespace DSGTool.Config
                 ReadOnly = true,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-                AllowUserToAddRows = false
+                AllowUserToAddRows = false,
+                BackgroundColor = Color.White,
+                BorderStyle = BorderStyle.Fixed3D,
+                RowHeadersVisible = false,
+                AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
+                {
+                    BackColor = Color.AliceBlue
+                },
+                ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
+                {
+                    BackColor = Color.LightSteelBlue,
+                    Font = new Font("Segoe UI", 9, FontStyle.Bold),
+                    Alignment = DataGridViewContentAlignment.MiddleCenter
+                }
             };
             foreach (var col in columns) dgv.Columns.Add(col, col);
             return dgv;
@@ -68,20 +86,64 @@ namespace DSGTool.Config
         private TabPage CreateTabPage(string title, DataGridView dgv, EventHandler add, EventHandler edit, EventHandler delete)
         {
             var tab = new TabPage(title);
-            var panel = new Panel { Dock = DockStyle.Fill };
-            dgv.Dock = DockStyle.Top; dgv.Height = 400;
+            var panel = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                RowCount = 3,
+                ColumnCount = 1
+            };
+            panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 35)); // Search bar
+            panel.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); // Data grid
+            panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 50)); // Button panel
 
-            var btnPanel = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 40, FlowDirection = FlowDirection.LeftToRight };
-            if (add != null) { var btnAdd = new Button { Text = "Add", Width = 80 }; btnAdd.Click += add; btnPanel.Controls.Add(btnAdd); }
-            if (edit != null) { var btnEdit = new Button { Text = "Edit", Width = 80 }; btnEdit.Click += edit; btnPanel.Controls.Add(btnEdit); }
-            if (delete != null) { var btnDelete = new Button { Text = "Delete", Width = 80 }; btnDelete.Click += delete; btnPanel.Controls.Add(btnDelete); }
+            // Search box
+            var txtSearch = new TextBox { PlaceholderText = "🔍 Search...", Dock = DockStyle.Fill };
+            txtSearch.TextChanged += (s, e) => ApplySearchFilter(dgv, txtSearch.Text);
+            panel.Controls.Add(txtSearch, 0, 0);
 
-            panel.Controls.Add(dgv);
-            panel.Controls.Add(btnPanel);
+            // Data grid
+            panel.Controls.Add(dgv, 0, 1);
+
+            // Button bar
+            var btnPanel = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.LeftToRight,
+                Padding = new Padding(10),
+                BackColor = Color.WhiteSmoke
+            };
+            if (add != null) btnPanel.Controls.Add(MakeButton("➕ Add", add));
+            if (edit != null) btnPanel.Controls.Add(MakeButton("✏️ Edit", edit));
+            if (delete != null) btnPanel.Controls.Add(MakeButton("🗑 Delete", delete));
+
+            panel.Controls.Add(btnPanel, 0, 2);
             tab.Controls.Add(panel);
             return tab;
         }
 
+        private Button MakeButton(string text, EventHandler onClick)
+        {
+            return new Button
+            {
+                Text = text,
+                Width = 100,
+                Height = 30,
+                Font = new Font("Segoe UI", 9, FontStyle.Regular),
+                BackColor = Color.LightGray,
+                FlatStyle = FlatStyle.Flat
+            }.Also(b => b.Click += onClick);
+        }
+        private void ApplySearchFilter(DataGridView dgv, string filterText)
+        {
+            foreach (DataGridViewRow row in dgv.Rows)
+            {
+                row.Visible = string.IsNullOrWhiteSpace(filterText) ||
+                             row.Cells.Cast<DataGridViewCell>()
+                                .Any(c => c.Value != null &&
+                                          c.Value.ToString()
+                                          .IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0);
+            }
+        }
         private void LoadAllData()
         {
             LoadGateways();
@@ -89,7 +151,7 @@ namespace DSGTool.Config
             LoadDSGClients();
             LoadGatewayMessageMap();
         }
-
+        
         private void LoadGateways()
         {
             dgvGateways.Rows.Clear();
@@ -300,5 +362,13 @@ namespace DSGTool.Config
             _dbWorks.DeleteGatewayMessageType(gatewayId, messageTypeId);
             LoadGatewayMessageMap();
         }
+    }
+}
+internal static class ControlExtensions
+{
+    public static T Also<T>(this T control, Action<T> action)
+    {
+        action(control);
+        return control;
     }
 }

@@ -234,7 +234,7 @@ namespace DSGTool
             // Pass your connection string here
             string connectionString = "Server=192.168.102.15;Database=DSGData;User Id=rubaiyat;Password=12345;TrustServerCertificate=True;";
 
-            using var form = new Config.DbCrudManagerForm(connectionString);
+            using var form = new Config.ConfigurationManager(connectionString);
             form.ShowDialog(); // Modal dialog
         }
     }
