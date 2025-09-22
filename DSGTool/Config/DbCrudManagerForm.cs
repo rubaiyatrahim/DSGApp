@@ -25,6 +25,8 @@ namespace DSGTool.Config
 
             BuildUI();
             LoadAllData();
+            EnableInlineCrud();
+            EnableGatewayMessageMapInlineCheckedListBox(dgvGatewayMessageMap);
         }
 
         private void BuildUI()
@@ -36,17 +38,10 @@ namespace DSGTool.Config
             dgvDSGClients = BuildGrid(new[] { "Id", "GatewayId", "StartingSequenceNumber", "EndingSequenceNumber", "HeartbeatIntervalSeconds" });
             dgvGatewayMessageMap = BuildGrid(new[] { "Id", "GatewayName", "MessageTypeName" });
 
-            tabControl.TabPages.Add(CreateTabPage("Gateways", dgvGateways,
-                AddGateway_Click, EditGateway_Click, DeleteGateway_Click));
-
-            tabControl.TabPages.Add(CreateTabPage("Message Types", dgvMessageTypes,
-                AddMessageType_Click, EditMessageType_Click, DeleteMessageType_Click));
-
-            tabControl.TabPages.Add(CreateTabPage("DSG Clients", dgvDSGClients,
-                AddDSGClient_Click, EditDSGClient_Click, DeleteDSGClient_Click));
-
-            tabControl.TabPages.Add(CreateTabPage("Gateway ↔ MessageType", dgvGatewayMessageMap,
-                AddGatewayMessageType_Click, /*EditGatewayMessageType_Click*/null, DeleteGatewayMessageType_Click));
+            tabControl.TabPages.Add(new TabPage("Gateways") { Controls = { dgvGateways } });
+            tabControl.TabPages.Add(new TabPage("Message Types") { Controls = { dgvMessageTypes } });
+            tabControl.TabPages.Add(new TabPage("DSG Clients") { Controls = { dgvDSGClients } });
+            tabControl.TabPages.Add(new TabPage("Gateway ↔ MessageType") { Controls = { dgvGatewayMessageMap } });
 
             Controls.Add(tabControl);
         }
@@ -56,30 +51,217 @@ namespace DSGTool.Config
             var dgv = new DataGridView
             {
                 Dock = DockStyle.Fill,
-                ReadOnly = true,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-                AllowUserToAddRows = false
+                AllowUserToAddRows = true,
+                AllowUserToDeleteRows = true,
+                EditMode = DataGridViewEditMode.EditOnKeystrokeOrF2
             };
             foreach (var col in columns) dgv.Columns.Add(col, col);
             return dgv;
         }
 
-        private TabPage CreateTabPage(string title, DataGridView dgv, EventHandler add, EventHandler edit, EventHandler delete)
+        private void EnableInlineCrud()
         {
-            var tab = new TabPage(title);
-            var panel = new Panel { Dock = DockStyle.Fill };
-            dgv.Dock = DockStyle.Top; dgv.Height = 400;
+            // Gateways
+            dgvGateways.CellEndEdit += (s, e) =>
+            {
+                var row = dgvGateways.Rows[e.RowIndex];
+                if (row.IsNewRow) return;
+                dgvGateways.BeginInvoke(new Action(() =>
+                {
+                    try
+                    {
+                        if (row.Cells["Id"].Value == null || string.IsNullOrEmpty(row.Cells["Id"].Value?.ToString()))
+                        {
+                            var g = new Gateway(0,
+                                row.Cells["PartitionId"].Value?.ToString(),
+                                row.Cells["EnvironmentName"].Value?.ToString(),
+                                row.Cells["GatewayName"].Value?.ToString(),
+                                row.Cells["HostIp"].Value?.ToString(),
+                                Convert.ToInt32(row.Cells["Port"].Value ?? 0),
+                                row.Cells["UserName"].Value?.ToString(),
+                                row.Cells["Password"].Value?.ToString()
+                            );
+                            _dbWorks.InsertGateway(g);
+                        }
+                        else
+                        {
+                            var g = new Gateway(
+                                Convert.ToInt32(row.Cells["Id"].Value),
+                                row.Cells["PartitionId"].Value?.ToString(),
+                                row.Cells["EnvironmentName"].Value?.ToString(),
+                                row.Cells["GatewayName"].Value?.ToString(),
+                                row.Cells["HostIp"].Value?.ToString(),
+                                Convert.ToInt32(row.Cells["Port"].Value ?? 0),
+                                row.Cells["UserName"].Value?.ToString(),
+                                row.Cells["Password"].Value?.ToString()
+                            );
+                            _dbWorks.UpdateGateway(g);
+                        }
+                        ReloadAndReselect(dgvGateways, LoadGateways, e.RowIndex);
+                        LoadGatewayMessageMap();
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error saving Gateway: {ex.Message}");
+                        ReloadAndReselect(dgvGateways, LoadGateways, e.RowIndex);
+                    }
+                }));
+            };
 
-            var btnPanel = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 40, FlowDirection = FlowDirection.LeftToRight };
-            if (add != null) { var btnAdd = new Button { Text = "Add", Width = 80 }; btnAdd.Click += add; btnPanel.Controls.Add(btnAdd); }
-            if (edit != null) { var btnEdit = new Button { Text = "Edit", Width = 80 }; btnEdit.Click += edit; btnPanel.Controls.Add(btnEdit); }
-            if (delete != null) { var btnDelete = new Button { Text = "Delete", Width = 80 }; btnDelete.Click += delete; btnPanel.Controls.Add(btnDelete); }
+            dgvGateways.UserDeletingRow += (s, e) =>
+            {
+                if (e.Row.Cells["Id"].Value != null)
+                    _dbWorks.DeleteGateway(e.Row.Cells["Id"].Value.ToString());
+            };
 
-            panel.Controls.Add(dgv);
-            panel.Controls.Add(btnPanel);
-            tab.Controls.Add(panel);
-            return tab;
+            // MessageTypes
+            dgvMessageTypes.CellEndEdit += (s, e) =>
+            {
+                var row = dgvMessageTypes.Rows[e.RowIndex];
+                if (row.IsNewRow) return;
+                dgvMessageTypes.BeginInvoke(new Action(() =>
+                {
+                    try
+                    {
+                        if (row.Cells["Id"].Value == null || string.IsNullOrEmpty(row.Cells["Id"].Value?.ToString()))
+                        {
+                            var m = new MessageType(0,
+                                row.Cells["Name"].Value?.ToString(),
+                                row.Cells["MessageId"].Value?.ToString(),
+                                Convert.ToBoolean(row.Cells["IsSecMsg"].Value ?? false));
+                            _dbWorks.InsertMessageType(m);
+                        }
+                        else
+                        {
+                            var m = new MessageType(
+                                Convert.ToInt32(row.Cells["Id"].Value),
+                                row.Cells["Name"].Value?.ToString(),
+                                row.Cells["MessageId"].Value?.ToString(),
+                                Convert.ToBoolean(row.Cells["IsSecMsg"].Value ?? false)
+                            );
+                            _dbWorks.UpdateMessageType(m);
+                        }
+                        ReloadAndReselect(dgvMessageTypes, LoadMessageTypes, e.RowIndex);
+                        LoadGatewayMessageMap();
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error saving MessageType: {ex.Message}");
+                        ReloadAndReselect(dgvMessageTypes, LoadMessageTypes, e.RowIndex);
+                    }
+                }));
+            };
+
+            dgvMessageTypes.UserDeletingRow += (s, e) =>
+            {
+                if (e.Row.Cells["Id"].Value != null)
+                    _dbWorks.DeleteMessageType(Convert.ToInt32(e.Row.Cells["Id"].Value));
+            };
+
+            // DSG Clients
+            dgvDSGClients.CellEndEdit += (s, e) =>
+            {
+                var row = dgvDSGClients.Rows[e.RowIndex];
+                if (row.IsNewRow) return;
+                dgvDSGClients.BeginInvoke(new Action(() =>
+                {
+                    try
+                    {
+                        if (row.Cells["Id"].Value == null || string.IsNullOrEmpty(row.Cells["Id"].Value?.ToString()))
+                        {
+                            var c = new DSGClientEntity(0,
+                                Convert.ToInt32(row.Cells["GatewayId"].Value ?? 0),
+                                row.Cells["StartingSequenceNumber"].Value?.ToString(),
+                                row.Cells["EndingSequenceNumber"].Value?.ToString(),
+                                Convert.ToInt32(row.Cells["HeartbeatIntervalSeconds"].Value ?? 0)
+                            );
+                            _dbWorks.InsertDSGClient(c);
+                        }
+                        else
+                        {
+                            var c = new DSGClientEntity(
+                                Convert.ToInt32(row.Cells["Id"].Value),
+                                Convert.ToInt32(row.Cells["GatewayId"].Value ?? 0),
+                                row.Cells["StartingSequenceNumber"].Value?.ToString(),
+                                row.Cells["EndingSequenceNumber"].Value?.ToString(),
+                                Convert.ToInt32(row.Cells["HeartbeatIntervalSeconds"].Value ?? 0)
+                            );
+                            _dbWorks.UpdateDSGClient(c);
+                        }
+                        ReloadAndReselect(dgvDSGClients, LoadDSGClients, e.RowIndex);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error saving DSG Client: {ex.Message}");
+                        ReloadAndReselect(dgvDSGClients, LoadDSGClients, e.RowIndex);
+                    }
+                }));
+            };
+
+            dgvDSGClients.UserDeletingRow += (s, e) =>
+            {
+                if (e.Row.Cells["Id"].Value != null)
+                    _dbWorks.DeleteDSGClient(e.Row.Cells["Id"].Value.ToString());
+            };
+        }
+
+        private void EnableGatewayMessageMapInlineCheckedListBox(DataGridView dgv)
+        {
+            CheckedListBox clb = new CheckedListBox { Visible = false, CheckOnClick = true };
+            dgv.Controls.Add(clb);
+
+            dgv.CellClick += (s, e) =>
+            {
+                if (e.RowIndex < 0 || e.ColumnIndex != dgv.Columns["MessageTypeName"].Index) return;
+
+                var row = dgv.Rows[e.RowIndex];
+                string gatewayName = row.Cells["GatewayName"].Value?.ToString();
+                var gateway = _dbWorks.GetGateways().FirstOrDefault(g => g.GatewayName == gatewayName);
+                if (gateway == null) return;
+
+                var allMessageTypes = _dbWorks.GetMessageTypes();
+                var currentIds = _dbWorks.GetMessageTypeIdsForGateway(gateway.Id);
+
+                clb.Items.Clear();
+                foreach (var mt in allMessageTypes)
+                    clb.Items.Add(mt.Name, currentIds.Contains(mt.Id));
+
+                var cellRect = dgv.GetCellDisplayRectangle(e.ColumnIndex, e.RowIndex, true);
+                clb.SetBounds(cellRect.X, cellRect.Y, cellRect.Width, cellRect.Height * 5);
+                clb.Visible = true;
+                clb.BringToFront();
+                clb.Tag = gateway.Id; // remember gateway
+                clb.Focus();
+            };
+
+            clb.LostFocus += (s, e) =>
+            {
+                if (!(clb.Tag is int gatewayId)) return;
+
+                var allMessageTypes = _dbWorks.GetMessageTypes();
+                var selectedNames = clb.CheckedItems.Cast<string>().ToList();
+                var selectedIds = allMessageTypes.Where(m => selectedNames.Contains(m.Name)).Select(m => m.Id).ToList();
+
+                var existingIds = _dbWorks.GetMessageTypeIdsForGateway(gatewayId);
+                foreach (var id in existingIds) _dbWorks.DeleteGatewayMessageType(gatewayId, id);
+                foreach (var id in selectedIds) _dbWorks.InsertGatewayMessageType(gatewayId, id);
+
+                int selectedRowIndex = dgv.CurrentCell.RowIndex;
+                LoadGatewayMessageMap();
+                if (selectedRowIndex < dgv.Rows.Count)
+                    dgv.Rows[selectedRowIndex].Selected = true;
+
+                clb.Visible = false;
+            };
+        }
+
+        private void ReloadAndReselect(DataGridView dgv, Action loader, int rowIndex)
+        {
+            loader();
+            if (rowIndex < dgv.Rows.Count)
+                dgv.Rows[rowIndex].Selected = true;
         }
 
         private void LoadAllData()
@@ -95,7 +277,7 @@ namespace DSGTool.Config
             dgvGateways.Rows.Clear();
             foreach (var g in _dbWorks.GetGateways())
                 dgvGateways.Rows.Add(g.Id, g.PartitionId, g.EnvironmentName, g.GatewayName, g.Host, g.Port, g.Username, g.Password);
-            dgvGateways.Columns[0].Visible = false; // Hide Id column
+            dgvGateways.Columns[0].Visible = false;
         }
 
         private void LoadMessageTypes()
@@ -103,7 +285,7 @@ namespace DSGTool.Config
             dgvMessageTypes.Rows.Clear();
             foreach (var m in _dbWorks.GetMessageTypes())
                 dgvMessageTypes.Rows.Add(m.Id, m.Name, m.MessageId, m.IsSecMsg);
-            dgvMessageTypes.Columns[0].Visible = false; // Hide Id column
+            dgvMessageTypes.Columns[0].Visible = false;
         }
 
         private void LoadDSGClients()
@@ -111,7 +293,7 @@ namespace DSGTool.Config
             dgvDSGClients.Rows.Clear();
             foreach (var c in _dbWorks.GetDSGClientEntities())
                 dgvDSGClients.Rows.Add(c.Id, c.GatewayId, c.StartingSequenceNumber, c.EndingSequenceNumber, c.HeartbeatIntervalSeconds);
-            dgvDSGClients.Columns[0].Visible = false; // Hide Id column
+            dgvDSGClients.Columns[0].Visible = false;
         }
 
         private void LoadGatewayMessageMap()
@@ -123,182 +305,12 @@ namespace DSGTool.Config
             foreach (var g in gateways)
             {
                 var msgIds = _dbWorks.GetMessageTypeIdsForGateway(g.Id);
-                foreach (var id in msgIds)
-                {
-                    var msg = messageTypes.FirstOrDefault(m => m.Id == id);
-                    if (msg != null)
-                        dgvGatewayMessageMap.Rows.Add($"{g.Id}_{msg.Id}", g.GatewayName, msg.Name);
-                }
+                var names = msgIds.Select(id => messageTypes.FirstOrDefault(m => m.Id == id)?.Name)
+                                  .Where(n => n != null)
+                                  .ToList();
+                dgvGatewayMessageMap.Rows.Add($"{g.Id}", g.GatewayName, string.Join(", ", names));
             }
-        }
-
-        // ===============================
-        // Gateway CRUD
-        // ===============================
-        private void AddGateway_Click(object sender, EventArgs e)
-        {
-            using var form = new GatewayEditForm();
-            if (form.ShowDialog() == DialogResult.OK)
-            {
-                _dbWorks.InsertGateway(form.Gateway);
-                LoadGateways();
-                LoadGatewayMessageMap();
-            }
-        }
-
-        private void EditGateway_Click(object sender, EventArgs e)
-        {
-            if (dgvGateways.SelectedRows.Count == 0) return;
-            var row = dgvGateways.SelectedRows[0];
-            var g = new Gateway(
-                Convert.ToInt32(row.Cells["Id"].Value),
-                row.Cells["PartitionId"].Value.ToString(),
-                row.Cells["EnvironmentName"].Value.ToString(),
-                row.Cells["GatewayName"].Value.ToString(),
-                row.Cells["HostIp"].Value.ToString(),
-                Convert.ToInt32(row.Cells["Port"].Value),
-                row.Cells["UserName"].Value.ToString(),
-                row.Cells["Password"].Value.ToString()
-            );
-            using var form = new GatewayEditForm(g);
-            if (form.ShowDialog() == DialogResult.OK)
-            {
-                _dbWorks.UpdateGateway(form.Gateway);
-                LoadGateways();
-                LoadGatewayMessageMap();
-            }
-        }
-
-        private void DeleteGateway_Click(object sender, EventArgs e)
-        {
-            if (dgvGateways.SelectedRows.Count == 0) return;
-            var id = dgvGateways.SelectedRows[0].Cells["Id"].Value.ToString();
-            _dbWorks.DeleteGateway(id);
-            LoadGateways();
-            LoadGatewayMessageMap();
-        }
-
-        // ===============================
-        // MessageType CRUD
-        // ===============================
-        private void AddMessageType_Click(object sender, EventArgs e)
-        {
-            using var form = new MessageTypeEditForm();
-            if (form.ShowDialog() == DialogResult.OK)
-            {
-                _dbWorks.InsertMessageType(form.MessageType);
-                LoadMessageTypes();
-                LoadGatewayMessageMap();
-            }
-        }
-
-        private void EditMessageType_Click(object sender, EventArgs e)
-        {
-            if (dgvMessageTypes.SelectedRows.Count == 0) return;
-            var row = dgvMessageTypes.SelectedRows[0];
-            var m = new MessageType(
-                Convert.ToInt32(row.Cells["Id"].Value),
-                row.Cells["Name"].Value.ToString(),
-                row.Cells["MessageId"].Value.ToString(),
-                Convert.ToBoolean(row.Cells["IsSecMsg"].Value)
-            );
-            using var form = new MessageTypeEditForm(m);
-            if (form.ShowDialog() == DialogResult.OK)
-            {
-                _dbWorks.UpdateMessageType(form.MessageType);
-                LoadMessageTypes();
-                LoadGatewayMessageMap();
-            }
-        }
-
-        private void DeleteMessageType_Click(object sender, EventArgs e)
-        {
-            if (dgvMessageTypes.SelectedRows.Count == 0) return;
-            var id = Convert.ToInt32(dgvMessageTypes.SelectedRows[0].Cells["Id"].Value);
-            _dbWorks.DeleteMessageType(id);
-            LoadMessageTypes();
-            LoadGatewayMessageMap();
-        }
-
-        // ===============================
-        // DSGClient CRUD
-        // ===============================
-        private void AddDSGClient_Click(object sender, EventArgs e)
-        {
-            using var form = new DSGClientEditForm(_dbWorks.GetGateways());
-            if (form.ShowDialog() == DialogResult.OK)
-            {
-                _dbWorks.InsertDSGClient(form.DSGClient);
-                LoadDSGClients();
-            }
-        }
-
-        private void EditDSGClient_Click(object sender, EventArgs e)
-        {
-            if (dgvDSGClients.SelectedRows.Count == 0) return;
-            var row = dgvDSGClients.SelectedRows[0];
-            var client = new DSGClientEntity(
-                Convert.ToInt32(row.Cells["Id"].Value),
-                Convert.ToInt32(row.Cells["GatewayId"].Value),
-                row.Cells["StartingSequenceNumber"].Value.ToString(),
-                row.Cells["EndingSequenceNumber"].Value.ToString(),
-                Convert.ToInt32(row.Cells["HeartbeatIntervalSeconds"].Value)
-            );
-            using var form = new DSGClientEditForm(_dbWorks.GetGateways(), client);
-            if (form.ShowDialog() == DialogResult.OK)
-            {
-                _dbWorks.UpdateDSGClient(form.DSGClient);
-                LoadDSGClients();
-            }
-        }
-
-        private void DeleteDSGClient_Click(object sender, EventArgs e)
-        {
-            if (dgvDSGClients.SelectedRows.Count == 0) return;
-            var id = dgvDSGClients.SelectedRows[0].Cells["Id"].Value.ToString();
-            _dbWorks.DeleteDSGClient(id);
-            LoadDSGClients();
-        }
-
-        // ===============================
-        // GatewayMessageType CRUD
-        // ===============================
-        private void AddGatewayMessageType_Click(object sender, EventArgs e)
-        {
-            using var form = new GatewayMessageTypeEditForm(_dbWorks.GetGateways(), _dbWorks.GetMessageTypes());
-            if (form.ShowDialog() == DialogResult.OK)
-            {
-                _dbWorks.InsertGatewayMessageType(form.SelectedGatewayId, form.SelectedMessageTypeIds.First());
-                LoadGatewayMessageMap();
-            }
-        }
-
-        private void EditGatewayMessageType_Click(object sender, EventArgs e)
-        {
-            if (dgvGatewayMessageMap.SelectedRows.Count == 0) return;
-            var row = dgvGatewayMessageMap.SelectedRows[0];
-            int gatewayId = _dbWorks.GetGateways().FirstOrDefault(g => g.GatewayName == row.Cells["GatewayName"].Value.ToString())?.Id ?? 0;
-            int messageTypeId = _dbWorks.GetMessageTypes().FirstOrDefault(m => m.Name == row.Cells["MessageTypeName"].Value.ToString())?.Id ?? 0;
-
-            var existing = new GatewayMessageType { GatewayId = gatewayId, MessageTypeId = messageTypeId };
-            using var form = new GatewayMessageTypeEditForm(_dbWorks.GetGateways(), _dbWorks.GetMessageTypes(), existing);
-            if (form.ShowDialog() == DialogResult.OK)
-            {
-                _dbWorks.DeleteGatewayMessageType(existing.GatewayId, existing.MessageTypeId);
-                _dbWorks.InsertGatewayMessageType(form.SelectedGatewayId, form.SelectedMessageTypeIds.First());
-                LoadGatewayMessageMap();
-            }
-        }
-
-        private void DeleteGatewayMessageType_Click(object sender, EventArgs e)
-        {
-            if (dgvGatewayMessageMap.SelectedRows.Count == 0) return;
-            var row = dgvGatewayMessageMap.SelectedRows[0];
-            int gatewayId = _dbWorks.GetGateways().FirstOrDefault(g => g.GatewayName == row.Cells["GatewayName"].Value.ToString())?.Id ?? 0;
-            int messageTypeId = _dbWorks.GetMessageTypes().FirstOrDefault(m => m.Name == row.Cells["MessageTypeName"].Value.ToString())?.Id ?? 0;
-
-            _dbWorks.DeleteGatewayMessageType(gatewayId, messageTypeId);
-            LoadGatewayMessageMap();
+            dgvGatewayMessageMap.Columns[0].Visible = false;
         }
     }
 }
