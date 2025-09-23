@@ -181,7 +181,11 @@ namespace DSGTool.Data
             => ExecuteSql("INSERT INTO DSGClient(GatewayId, StartingSequenceNumber, EndingSequenceNumber, HeartbeatIntervalSeconds) " +
                 "OUTPUT INSERTED.Id " +
                 "VALUES (@gatewayid, @startingsequencenumber, @endingsequencenumber, @heartbeatintervalseconds)",
-                new SqlParameter("@gatewayid", dsgClient));
+                new SqlParameter("@gatewayid", Convert.ToInt32(dsgClient.GatewayId)),
+                new SqlParameter("@startingsequencenumber", dsgClient.StartingSequenceNumber),
+                new SqlParameter("@endingsequencenumber", dsgClient.EndingSequenceNumber),
+                new SqlParameter("@heartbeatintervalseconds", dsgClient.HeartbeatIntervalSeconds)
+            );
 
         public void UpdateDSGClient(DSGClientEntity dsgClient)
             => ExecuteSql("UPDATE DSGClient SET GatewayId = @gatewayid, StartingSequenceNumber = @startingsequencenumber, EndingSequenceNumber = @endingsequencenumber, HeartbeatIntervalSeconds = @heartbeatintervalseconds WHERE Id = @id",
