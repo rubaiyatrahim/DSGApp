@@ -65,12 +65,66 @@ namespace DSGTool.Config
             };
             dgvGatewayMessageMap.Columns.Insert(gmGwIndex, gmComboCol);
 
-            tabControl.TabPages.Add(new TabPage("Gateways") { Controls = { dgvGateways } });
-            tabControl.TabPages.Add(new TabPage("Message Types") { Controls = { dgvMessageTypes } });
-            tabControl.TabPages.Add(new TabPage("DSG Clients") { Controls = { dgvDSGClients } });
-            tabControl.TabPages.Add(new TabPage("Gateway - MessageType") { Controls = { dgvGatewayMessageMap } });
+            //tabControl.TabPages.Add(new TabPage("Gateways") { Controls = { dgvGateways } });
+            //tabControl.TabPages.Add(new TabPage("Message Types") { Controls = { dgvMessageTypes } });
+            //tabControl.TabPages.Add(new TabPage("DSG Clients") { Controls = { dgvDSGClients } });
+            //tabControl.TabPages.Add(new TabPage("Gateway - MessageType") { Controls = { dgvGatewayMessageMap } });
+            tabControl.TabPages.Add(CreateTabPage("Gateways", dgvGateways));
+            tabControl.TabPages.Add(CreateTabPage("Message Types", dgvMessageTypes));
+            tabControl.TabPages.Add(CreateTabPage("DSG Clients", dgvDSGClients));
+            tabControl.TabPages.Add(CreateTabPage("Gateway - MessageType", dgvGatewayMessageMap));
 
             Controls.Add(tabControl);
+        }
+
+        private TabPage CreateTabPage(string title, DataGridView dgv)
+        {
+            var tab = new TabPage(title);
+            var panel = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                RowCount = 2,
+                ColumnCount = 1
+            };
+            panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 35)); // Search bar
+            panel.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); // Data grid
+
+            // Search box
+            var txtSearch = new TextBox { PlaceholderText = "🔍 Search...", Dock = DockStyle.Fill };
+            txtSearch.TextChanged += (s, e) => ApplySearchFilter(dgv, txtSearch.Text);
+            panel.Controls.Add(txtSearch, 0, 0);
+
+            // Data grid
+            panel.Controls.Add(dgv, 0, 1);
+
+            tab.Controls.Add(panel);
+            return tab;
+        }
+
+        private void ApplySearchFilter(DataGridView dgv, string filterText)
+        {
+            try
+            {
+                if (dgv.IsCurrentCellInEditMode)
+                    dgv.EndEdit();
+
+                foreach (DataGridViewRow row in dgv.Rows)
+                {
+                    if (row.IsNewRow) continue;
+
+                    bool match = string.IsNullOrWhiteSpace(filterText) ||
+                                 row.Cells.Cast<DataGridViewCell>()
+                                    .Any(cell => cell.FormattedValue != null &&
+                                                 cell.FormattedValue.ToString()
+                                                     .IndexOf(filterText, StringComparison.OrdinalIgnoreCase) >= 0);
+
+                    row.Visible = match;
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                MessageBox.Show($"Filter failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
         }
 
         private DataGridView BuildGrid(string[] columns)
