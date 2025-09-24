@@ -28,8 +28,8 @@ namespace DSGTool
         private System.Windows.Forms.Timer _logTimer;
 
 
-        public MainForm() 
-        { 
+        public MainForm()
+        {
             InitializeComponent();
 
             // Setup periodic log flush (Timer runs on UI thread)
@@ -38,22 +38,20 @@ namespace DSGTool
 
         }
 
-        private async void MainForm_Load(object sender, EventArgs e)
+        private void MainForm_Load(object sender, EventArgs e)
         {
+            // Initially disable buttons until clients are loaded
+            SetButtonStatesOnLoad(false);
+            Log("Application started.");
+
             // Create cancellation token
             _cts = new CancellationTokenSource();
 
             // Hook Console.WriteLine to Log() method
             Console.SetOut(new TextBoxWriter(Log));
 
-            // Initialize timer to flush logs periodically ---
-            _logTimer.Start();
-
-            await Task.Run(() =>
-            {
-                LoadClientsPool();
-            });
-            BuildCards();
+            // Initialize timer to flush logs periodically
+            _logTimer.Start();           
         }
 
         private void LoadClientsPool()
@@ -280,6 +278,28 @@ namespace DSGTool
 
             using var form = new Config.ConfigurationManager(connectionString);
             form.ShowDialog(); // Modal dialog
+        }
+
+        private async void btnLoadClients_Click(object sender, EventArgs e)
+        {
+            await Task.Run(() =>
+            {
+                LoadClientsPool();
+            });
+            if (_clientPool != null)
+            {
+                BuildCards();
+                SetButtonStatesOnLoad(true);
+            }
+        }
+
+        private void SetButtonStatesOnLoad(bool enabled)
+        {
+            btnLoadClients.Enabled = !enabled;
+            btnConnect.Enabled = enabled;
+            btnDownload.Enabled = enabled;
+            btnHeartbeat.Enabled = enabled;
+            btnStop.Enabled = enabled;
         }
     }
 }
