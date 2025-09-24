@@ -49,11 +49,18 @@ namespace DSGClient
 
         public async Task DownloadAsync()
         {
-            await SendAsync(XmlManager.BuildMessageDownload(_gateway.PartitionId, _startingSequenceNumber, _endingSequenceNumber, _messageTypes));
-            Console.WriteLine(GATEWAY_TAG + "<< Download request sent"
-                + " from sequence number " + _startingSequenceNumber + " to " + _endingSequenceNumber
-                + " for messages: " + _messageTypes.Select(x => x.Name).Aggregate((a, b) => a + ", " + b)
-                + ".");
+            try
+            {
+                await SendAsync(XmlManager.BuildMessageDownload(_gateway.PartitionId, _startingSequenceNumber, _endingSequenceNumber, _messageTypes));
+                Console.WriteLine(GATEWAY_TAG + "<< Download request sent"
+                    + " from sequence number " + _startingSequenceNumber + " to " + _endingSequenceNumber
+                    + " for messages: " + _messageTypes.Select(x => x.Name).Aggregate((a, b) => a + ", " + b)
+                    + ".");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"{GATEWAY_TAG}<< Failed to download: {ex.Message}");
+            }
         }
 
         public async Task SendHeartbeatAsync() => await SendAsync(XmlManager.BuildMessageHeartbeat());
