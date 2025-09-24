@@ -1,5 +1,7 @@
 ﻿using DSGClient;
 using DSGTool.Data.Models;
+using System.Collections.Concurrent;
+using System.Text;
 
 namespace DSGTool
 {
@@ -21,9 +23,22 @@ namespace DSGTool
         private Dictionary<string, GatewayCard> _cards = new();
         private Dictionary<string, GatewayStats> _stats = new();
 
-        public MainForm() { InitializeComponent(); }
+        // Logging
+        private readonly ConcurrentQueue<string> _logQueue = new();
+        private System.Windows.Forms.Timer _logTimer;
 
-        private void MainForm_Load(object sender, EventArgs e)
+
+        public MainForm() 
+        { 
+            InitializeComponent();
+
+            // Setup periodic log flush (Timer runs on UI thread)
+            _logTimer = new System.Windows.Forms.Timer { Interval = 50 };
+            _logTimer.Tick += (s, e) => FlushLogsToUI();
+
+        }
+
+        private async void MainForm_Load(object sender, EventArgs e)
         {
             // Create cancellation token
             _cts = new CancellationTokenSource();
@@ -31,7 +46,13 @@ namespace DSGTool
             // Hook Console.WriteLine to Log() method
             Console.SetOut(new TextBoxWriter(Log));
 
-            LoadClientsPool();
+            // Initialize timer to flush logs periodically ---
+            _logTimer.Start();
+
+            await Task.Run(() =>
+            {
+                LoadClientsPool();
+            });
             BuildCards();
         }
 
@@ -41,7 +62,7 @@ namespace DSGTool
 
             //LoadSampleDataFromCode();
             //loader.DeleteAllMasterData();
-            //LoadSampleDataFromDb(loader);
+            //AddSampleDataToDb(loader);
 
             _clientPool = loader.LoadClients();
             _clientPool.MessageReceived += OnMessageReceived;
@@ -63,7 +84,7 @@ namespace DSGTool
             _clientPool.AddClient(gatewayMD, new List<MessageType> { msgType_Announcement }, "1", "1000000", HEARTBEAT_INTERVAL_SECONDS);
         }
 
-        private void LoadSampleDataFromDb(ClientLoader loader)
+        private void AddSampleDataToDb(ClientLoader loader)
         {
             // Add gateways
             int g1 = loader.AddGateway(new Gateway(null, "1", "CSETEST1", "DSGOMGateway", HOST, 7530, USERID, PASSWORD));
@@ -171,28 +192,50 @@ namespace DSGTool
 
         private async void btnQuit_Click(object sender, EventArgs e) => Close();
 
-        /**
-         * Log a message to the text box.
-         * 
-         * @param message: Message to log.
-         * */
+        // Queue log messages instead of blocking UI
         private void Log(string message)
         {
-            if (InvokeRequired) // Check if we're on the UI thread
-            {
-                BeginInvoke(new Action(() => Log(message))); // Run on the UI thread
-                return;
-            }
-
-            // Log the message to the text box
             string logTime = DateTime.Now.ToString("[dd-MMM-yyyy HH:mm:ss.fff]");
-            txtLog.AppendText($"\r\n{logTime} {message}");
-            txtLog.ScrollToCaret();
+            _logQueue.Enqueue($"{logTime} {message}");
 
             // Log to file
             using (StreamWriter sw = new StreamWriter("DSGClient_Log.txt", true))
             {
                 sw.WriteLine($"{logTime} {message}");
+            }
+
+        }
+
+        // Flush queue to UI every 50ms
+        private void FlushLogsToUI()
+        {
+            // If queue empty, nothing to do
+            if (_logQueue.IsEmpty) return;
+
+            // Ensure we run on UI thread
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action(FlushLogsToUI));
+                return;
+            }
+
+            var sb = new StringBuilder();
+            while (_logQueue.TryDequeue(out var entry))
+                sb.AppendLine(entry);
+
+            if (sb.Length == 0) return;
+
+            txtLog.AppendText(sb.ToString());
+            txtLog.ScrollToCaret();
+
+            // Trim if grows too large for performance
+            const int maxChars = 100_000;
+            const int keepChars = 40_000;
+            if (txtLog.TextLength > maxChars)
+            {
+                txtLog.Text = txtLog.Text[^keepChars..];
+                txtLog.SelectionStart = txtLog.Text.Length;
+                txtLog.ScrollToCaret();
             }
         }
 
