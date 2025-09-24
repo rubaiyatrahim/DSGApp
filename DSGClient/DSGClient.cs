@@ -196,6 +196,15 @@ namespace DSGClient
                         // Show the XML string
                         Console.WriteLine(GATEWAY_TAG + ">> XML Received:" + Environment.NewLine + xml + Environment.NewLine);
 
+                        // Save Message to file named <MessageId>.txt
+                        if (messageId != 0 && !string.IsNullOrWhiteSpace(xml))
+                        {
+                            using (StreamWriter sw = new StreamWriter($"{messageId}.txt", true))
+                            {
+                                sw.WriteLine($"{xml}");
+                            }
+                        }
+                            
                     }
                 }
             }
