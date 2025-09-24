@@ -9,6 +9,7 @@ namespace DSGTool
         private Label lblTitle;
         private Label lblStatus;
         private Label lblTotal;
+        private Label lblTotalExceptHB;
         private FlowLayoutPanel pnlMessageTypes;
         private Button btnStart;
         private Button btnDownload;
@@ -41,12 +42,13 @@ namespace DSGTool
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
-                RowCount = 5,
+                RowCount = 6,
                 AutoSize = true
             };
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Title
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Status
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Total
+            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Total except HB
             layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); // Message types (expandable)
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Buttons
 
@@ -71,6 +73,14 @@ namespace DSGTool
             lblTotal = new Label()
             {
                 Text = "Total: 0",
+                AutoSize = true,
+                Font = new Font("Segoe UI", 10, FontStyle.Italic),
+                Dock = DockStyle.Fill
+            };
+
+            lblTotalExceptHB = new Label()
+            {
+                Text = "Total (excl. HB): 0",
                 AutoSize = true,
                 Font = new Font("Segoe UI", 10, FontStyle.Italic),
                 Dock = DockStyle.Fill
@@ -107,8 +117,9 @@ namespace DSGTool
             layout.Controls.Add(lblTitle, 0, 0);
             layout.Controls.Add(lblStatus, 0, 1);
             layout.Controls.Add(lblTotal, 0, 2);
-            layout.Controls.Add(pnlMessageTypes, 0, 3);
-            layout.Controls.Add(buttonPanel, 0, 4);
+            layout.Controls.Add(lblTotalExceptHB, 0, 3);
+            layout.Controls.Add(pnlMessageTypes, 0, 4);
+            layout.Controls.Add(buttonPanel, 0, 5);
 
             this.Controls.Add(layout);
         }
@@ -123,6 +134,11 @@ namespace DSGTool
         public void UpdateTotalCount(int total)
         {
             lblTotal.Text = $"Total: {total}";
+        }
+
+        public void UpdateTotalExceptHBCount(int totalExceptHB)
+        {
+            lblTotalExceptHB.Text = $"Total except HB: {totalExceptHB}";
         }
 
         public void UpdateMessageTypeCount(string msgType, int count)

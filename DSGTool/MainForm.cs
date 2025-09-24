@@ -141,6 +141,7 @@ namespace DSGTool
                 stats.IncrementMessageCount(msgType);
 
                 card.UpdateTotalCount(stats.TotalMessages);
+                card.UpdateTotalExceptHBCount(stats.TotalMessages - stats.GetCount("0"));
                 card.UpdateMessageTypeCount(msgType, stats.GetCount(msgType));
             }
         }
