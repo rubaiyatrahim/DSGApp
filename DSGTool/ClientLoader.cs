@@ -11,14 +11,22 @@ public class ClientLoader
     {
         string connectionString = "Server=192.168.102.15;Database=DSGData;User Id=rubaiyat;Password=12345;TrustServerCertificate=True;";
         _db = new DbWorks(connectionString);
+        Console.WriteLine("Database connection established.");
     }
 
     public DSGClientPool LoadClients()
     {
+        Console.WriteLine("Loading DSG Clients from database...");
+
         var gateways = _db.GetGateways();
+        Console.WriteLine($"Loaded {gateways.Count} Gateways from database.");
+
         var messageTypes = _db.GetMessageTypes();
+        Console.WriteLine($"Loaded {messageTypes.Count} Message Types from database.");
+
         var clients = _db.GetDSGClientEntities();
-        
+        Console.WriteLine($"Loaded {clients.Count} DSG Client entities from database.");
+
         var clientPool = new DSGClientPool();
 
         foreach (var client in clients)
@@ -35,6 +43,7 @@ public class ClientLoader
             );
         }
 
+        Console.WriteLine("All DSG Clients loaded into the client pool.");
         return clientPool;
     }
 
