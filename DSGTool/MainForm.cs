@@ -1,5 +1,7 @@
 ﻿using DSGClient;
 using DSGTool.Data.Models;
+using DSGTool.Logging;
+using Serilog;
 using System.Collections.Concurrent;
 using System.Text;
 
@@ -24,34 +26,47 @@ namespace DSGTool
         private Dictionary<string, GatewayStats> _stats = new();
 
         // Logging
-        private readonly ConcurrentQueue<string> _logQueue = new();
-        private System.Windows.Forms.Timer _logTimer;
+        //private readonly ConcurrentQueue<string> _logQueue = new();
+        //private System.Windows.Forms.Timer _logTimer;
 
+        public RichTextBox TextLog => txtLog;
 
         public MainForm()
         {
             InitializeComponent();
 
             // Setup periodic log flush (Timer runs on UI thread)
-            _logTimer = new System.Windows.Forms.Timer { Interval = 50 };
-            _logTimer.Tick += (s, e) => FlushLogsToUI();
+            //_logTimer = new System.Windows.Forms.Timer { Interval = 50 };
+            //_logTimer.Tick += (s, e) => FlushLogsToUI();
+            //Log.Logger = new LoggerConfiguration()
+        // Add TextBox sink for UI logging
+    
+            
+        //    Log.Logger = new LoggerConfiguration()
+        //.MinimumLevel.Debug()
+        //.Enrich.FromLogContext()
+        //.WriteTo.Console()
+        //.WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day)
+        //.WriteTo.Sink(new TextBoxSink(textLog)) // txtLog exists now
+        //.CreateLogger();
 
+        //    Log.Information("txtLog sink wired successfully");
         }
-
+        
         private void MainForm_Load(object sender, EventArgs e)
         {
             // Initially disable buttons until clients are loaded
             SetButtonStatesOnLoad(false);
-            Log("Application started.");
+            LogHelper.Info("Application started.");
 
             // Create cancellation token
             _cts = new CancellationTokenSource();
 
             // Hook Console.WriteLine to Log() method
-            Console.SetOut(new TextBoxWriter(Log));
+            //Console.SetOut(new TextBoxWriter(Log));
 
             // Initialize timer to flush logs periodically
-            _logTimer.Start();           
+            //_logTimer.Start();           
         }
 
         private void LoadClientsPool()
@@ -163,11 +178,11 @@ namespace DSGTool
             try
             {
                 await _clientPool.StartAllAsync(_cts.Token);
-                Log("Clients pool started.");
+                LogHelper.Info("Clients pool started.");
             }
             catch (Exception ex)
             {
-                Log("Connection error: " + ex.Message);
+                LogHelper.Error("Connection error: " + ex.Message);
             }
         }
 
@@ -179,11 +194,11 @@ namespace DSGTool
             try
             {
                 await _clientPool.SendHeartbeatAllAsync();
-                Log("Manual heartbeat sent to all gateways.");
+                LogHelper.Info("Manual heartbeat sent to all gateways.");
             }
             catch (Exception ex)
             {
-                Log("Error during manually sending heartbeat: " + ex.Message);
+                LogHelper.Error("Error during manually sending heartbeat: " + ex.Message);
             }
         }
 
@@ -192,51 +207,52 @@ namespace DSGTool
         private async void btnQuit_Click(object sender, EventArgs e) => Close();
 
         // Queue log messages instead of blocking UI
-        private void Log(string message)
-        {
-            string logTime = DateTime.Now.ToString("[dd-MMM-yyyy HH:mm:ss.fff]");
-            _logQueue.Enqueue($"{logTime} {message}");
+        //private void Log(string message)
+        //{
+        //    string logTime = DateTime.Now.ToString("[dd-MMM-yyyy HH:mm:ss.fff]");
+        //    //_logQueue.Enqueue($"{logTime} {message}");
+        //    LogHelper.Info(message); // Use Serilog for logging
 
-            // Log to file
-            using (StreamWriter sw = new StreamWriter("DSGClient_Log.txt", true))
-            {
-                sw.WriteLine($"{logTime} {message}");
-            }
+        //    // Log to file
+        //    using (StreamWriter sw = new StreamWriter("DSGClient_Log.txt", true))
+        //    {
+        //        sw.WriteLine($"{logTime} {message}");
+        //    }
 
-        }
+        //}
 
         // Flush queue to UI every 50ms
-        private void FlushLogsToUI()
-        {
-            // If queue empty, nothing to do
-            if (_logQueue.IsEmpty) return;
+        //private void FlushLogsToUI()
+        //{
+        //    // If queue empty, nothing to do
+        //    if (_logQueue.IsEmpty) return;
 
-            // Ensure we run on UI thread
-            if (InvokeRequired)
-            {
-                BeginInvoke(new Action(FlushLogsToUI));
-                return;
-            }
+        //    // Ensure we run on UI thread
+        //    if (InvokeRequired)
+        //    {
+        //        BeginInvoke(new Action(FlushLogsToUI));
+        //        return;
+        //    }
 
-            var sb = new StringBuilder();
-            while (_logQueue.TryDequeue(out var entry))
-                sb.AppendLine(entry);
+        //    var sb = new StringBuilder();
+        //    while (_logQueue.TryDequeue(out var entry))
+        //        sb.AppendLine(entry);
 
-            if (sb.Length == 0) return;
+        //    if (sb.Length == 0) return;
 
-            txtLog.AppendText(sb.ToString());
-            txtLog.ScrollToCaret();
+        //    txtLog.AppendText(sb.ToString());
+        //    txtLog.ScrollToCaret();
 
-            // Trim if grows too large for performance
-            const int maxChars = 100_000;
-            const int keepChars = 40_000;
-            if (txtLog.TextLength > maxChars)
-            {
-                txtLog.Text = txtLog.Text[^keepChars..];
-                txtLog.SelectionStart = txtLog.Text.Length;
-                txtLog.ScrollToCaret();
-            }
-        }
+        //    // Trim if grows too large for performance
+        //    const int maxChars = 100_000;
+        //    const int keepChars = 40_000;
+        //    if (txtLog.TextLength > maxChars)
+        //    {
+        //        txtLog.Text = txtLog.Text[^keepChars..];
+        //        txtLog.SelectionStart = txtLog.Text.Length;
+        //        txtLog.ScrollToCaret();
+        //    }
+        //}
 
         protected override async void OnFormClosing(FormClosingEventArgs e)
         {
@@ -247,7 +263,7 @@ namespace DSGTool
             }
             catch (Exception ex)
             {
-                Log("Error during shutdown: " + ex.Message);
+                LogHelper.Error("Error during shutdown: " + ex.Message);
             }
         }
 
@@ -267,7 +283,7 @@ namespace DSGTool
             }
             catch (Exception ex)
             {
-                Log("Error during shutdown: " + ex.Message);
+                LogHelper.Error("Error during shutdown: " + ex.Message);
             }
         }
 

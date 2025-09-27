@@ -52,14 +52,14 @@ namespace DSGClient
             try
             {
                 await SendAsync(XmlManager.BuildMessageDownload(_gateway.PartitionId, _startingSequenceNumber, _endingSequenceNumber, _messageTypes));
-                Console.WriteLine(GATEWAY_TAG + "<< Download request sent"
+                LogHelper.Info(GATEWAY_TAG + "<< Download request sent"
                     + " from sequence number " + _startingSequenceNumber + " to " + _endingSequenceNumber
                     + " for messages: " + _messageTypes.Select(x => x.Name).Aggregate((a, b) => a + ", " + b)
                     + ".");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"{GATEWAY_TAG}<< Failed to download: {ex.Message}");
+                LogHelper.Error($"{GATEWAY_TAG}<< Failed to download: {ex.Message}");
             }
         }
 
@@ -70,12 +70,12 @@ namespace DSGClient
             try
             {
                 await SendAsync(XmlManager.BuildMessageLogin(_gateway.Username, _gateway.Password, _messageTypes));
-                Console.WriteLine(GATEWAY_TAG + "<< Login sent.");
+                LogHelper.Info(GATEWAY_TAG + "<< Login sent.");
                 StatusChanged.Invoke(_gateway.GatewayName, true);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"{GATEWAY_TAG}<< Failed to send login: {ex.Message}");
+                LogHelper.Error($"{GATEWAY_TAG}<< Failed to send login: {ex.Message}");
             }
         }
 
@@ -84,12 +84,12 @@ namespace DSGClient
             try
             {
                 await SendAsync(XmlManager.BuildMessageLogout(_gateway.Username));
-                Console.WriteLine(GATEWAY_TAG + "<< Logout sent.");
+                LogHelper.Info(GATEWAY_TAG + "<< Logout sent.");
                 StatusChanged.Invoke(_gateway.GatewayName, false);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"{GATEWAY_TAG}<< Failed to send logout: {ex.Message}");
+                LogHelper.Error($"{GATEWAY_TAG}<< Failed to send logout: {ex.Message}");
             }
         }
 
@@ -105,11 +105,11 @@ namespace DSGClient
                     try
                     {
                         await SendHeartbeatAsync();
-                        Console.WriteLine(GATEWAY_TAG + "<< Heartbeat sent.");
+                        LogHelper.Info(GATEWAY_TAG + "<< Heartbeat sent.");
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"{GATEWAY_TAG}<< Heartbeat error: {ex.Message}");
+                        LogHelper.Error($"{GATEWAY_TAG}<< Heartbeat error: {ex.Message}");
                         break;
                     }
                 }
@@ -129,7 +129,7 @@ namespace DSGClient
                     int bytesRead = await _stream.ReadAsync(buffer, 0, buffer.Length, ct); // Read 8kb at a time
                     if (bytesRead == 0)
                     {
-                        Console.WriteLine(GATEWAY_TAG + ">> Connection closed by server.");
+                        LogHelper.Warn(GATEWAY_TAG + ">> Connection closed by server.");
                         _connected = false;
                         break;
                     }
@@ -155,7 +155,7 @@ namespace DSGClient
                         int fullMessageLength = LENGTH_OUTERHEADER + payloadLength; // Calculate full message length
                         if (payloadLength < 0 || fullMessageLength > 4_000_000)
                         {
-                            Console.WriteLine($"{GATEWAY_TAG}>> Invalid payload length: {payloadLength}. Dropping buffer.");
+                            LogHelper.Warn($"{GATEWAY_TAG}>> Invalid payload length: {payloadLength}. Dropping buffer.");
                             accumulator.Clear();
                             break;
                         }
@@ -165,12 +165,12 @@ namespace DSGClient
                         byte[] payload = accumulator.GetRange(LENGTH_OUTERHEADER, payloadLength).ToArray();
                         accumulator.RemoveRange(0, fullMessageLength);      // Remove the full message from accumulator
 
-                        Console.WriteLine($"{GATEWAY_TAG}>> Message Id: {messageId}, Sequence Number: {sequenceNumber}");
+                        LogHelper.Info($"{GATEWAY_TAG}>> Message Id: {messageId}, Sequence Number: {sequenceNumber}");
                         MessageReceived?.Invoke(_gateway.GatewayName, messageId.ToString());
 
                         if (payload.Length == 0)
                         {
-                            Console.WriteLine(GATEWAY_TAG + ">> Empty payload, skipping...");
+                            LogHelper.Warn(GATEWAY_TAG + ">> Empty payload, skipping...");
                             continue;
                         }
 
@@ -178,7 +178,7 @@ namespace DSGClient
                         int xmlStart = Array.IndexOf(payload, (byte)'<');
                         if (xmlStart < 0)
                         {
-                            Console.WriteLine(GATEWAY_TAG + ">> No XML found in payload, skipping...");
+                            LogHelper.Warn(GATEWAY_TAG + ">> No XML found in payload, skipping...");
                             continue;
                         }
 
@@ -197,12 +197,12 @@ namespace DSGClient
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine($"{GATEWAY_TAG}>> Failed to decode XML: {ex.Message}");
+                            LogHelper.Error($"{GATEWAY_TAG}>> Failed to decode XML: {ex.Message}");
                             continue;
                         }
                         // Show the XML string
-                        Console.WriteLine(GATEWAY_TAG + ">> XML Received:" + Environment.NewLine + xml + Environment.NewLine);
-
+                        LogHelper.Info(GATEWAY_TAG + ">> XML Received:" + Environment.NewLine + xml + Environment.NewLine);
+                        //LogHelper.Xml(GATEWAY_TAG + ">> XML Received:" + Environment.NewLine, XmlManager.GetXmlFromString(xml));
                         // Save Message to file named <MessageId>.txt
                         if (messageId != 0 && !string.IsNullOrWhiteSpace(xml))
                         {
@@ -217,15 +217,15 @@ namespace DSGClient
             }
             catch (OperationCanceledException)
             {
-                Console.WriteLine(GATEWAY_TAG + ">> Read loop canceled.");
+                LogHelper.Warn(GATEWAY_TAG + ">> Read loop canceled.");
             }
             catch (ObjectDisposedException ode)
             {
-                Console.WriteLine($"{GATEWAY_TAG}>> Object disposed. {ode.Message}");
+                LogHelper.Warn($"{GATEWAY_TAG}>> Object disposed. {ode.Message}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"{GATEWAY_TAG}>> Error in read loop: {ex.Message}");
+                LogHelper.Error($"{GATEWAY_TAG}>> Error in read loop: {ex.Message}");
             }
             finally
             {
@@ -283,11 +283,11 @@ namespace DSGClient
         {
             // Create a TCP client and connect to the DSG.
             _client = new TcpClient();
-            Console.WriteLine($"Connecting to {_gateway.GatewayName} of environment {_gateway.EnvironmentName} at {_gateway.Host}:{_gateway.Port}...");
+            LogHelper.Info($"Connecting to {_gateway.GatewayName} of environment {_gateway.EnvironmentName} at {_gateway.Host}:{_gateway.Port}...");
             await _client.ConnectAsync(_gateway.Host, _gateway.Port);
             _stream = _client.GetStream();
             _connected = true;
-            Console.WriteLine(GATEWAY_TAG + "<< Connected.");
+            LogHelper.Info(GATEWAY_TAG + "<< Connected.");
         }
 
         public async Task StopAsync()

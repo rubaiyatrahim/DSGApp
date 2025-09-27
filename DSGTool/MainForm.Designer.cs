@@ -27,6 +27,7 @@
             flowLayoutPanel1 = new FlowLayoutPanel();
             btnDbManager = new Button();
             btnLoadClients = new Button();
+            textLog = new TextBox();
             SuspendLayout();
             // 
             // btnDownload
@@ -68,11 +69,11 @@
             // txtLog
             // 
             txtLog.Font = new Font("Consolas", 9F);
-            txtLog.Location = new Point(12, 355);
+            txtLog.Location = new Point(12, 348);
             txtLog.Name = "txtLog";
             txtLog.ReadOnly = true;
             txtLog.ScrollBars = RichTextBoxScrollBars.Vertical;
-            txtLog.Size = new Size(1303, 183);
+            txtLog.Size = new Size(1256, 190);
             txtLog.TabIndex = 7;
             txtLog.Text = "";
             // 
@@ -111,6 +112,15 @@
             btnLoadClients.Text = "Load Clients";
             btnLoadClients.Click += btnLoadClients_Click;
             // 
+            // textLog
+            // 
+            textLog.Location = new Point(1253, 352);
+            textLog.Multiline = true;
+            textLog.Name = "textLog";
+            textLog.ScrollBars = ScrollBars.Both;
+            textLog.Size = new Size(62, 118);
+            textLog.TabIndex = 8;
+            // 
             // MainForm
             // 
             ClientSize = new Size(1327, 550);
@@ -123,14 +133,17 @@
             Controls.Add(btnStop);
             Controls.Add(btnQuit);
             Controls.Add(txtLog);
+            Controls.Add(textLog);
             Name = "MainForm";
             Text = "DSG Client GUI";
             Load += MainForm_Load;
             ResumeLayout(false);
+            PerformLayout();
         }
         private Button btnConnect;
         private FlowLayoutPanel flowLayoutPanel1;
         private Button btnDbManager;
         private Button btnLoadClients;
+        private TextBox textLog;
     }
 }

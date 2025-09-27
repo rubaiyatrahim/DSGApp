@@ -242,5 +242,31 @@ namespace DSGClient
             xw.WriteEndElement();
         }
 
+
+        static public XmlDocument GetXmlFromString(string xmlString)
+        {
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(RemoveInvalidXmlChars(xmlString));//.Replace("\n", ""));            
+            return xmlDoc;
+        }
+
+        private static string RemoveInvalidXmlChars(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return text;
+
+            StringBuilder sb = new StringBuilder(text.Length);
+            foreach (char ch in text)
+            {
+                try
+                {
+                    if (XmlConvert.IsXmlChar(ch)) // skips invalid control characters like 0x00
+                        sb.Append(ch);
+                    else
+                        sb.AppendFormat("\\x{0:X2}", (int)ch); // log escaped form instead of crashing
+                } catch (Exception) { }
+            }
+            return sb.ToString();
+        }
+
     }
 }
