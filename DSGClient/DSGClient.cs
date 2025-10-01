@@ -212,7 +212,7 @@ namespace DSGClient
                             int iStart = xml.IndexOf("<smsg");
                             if (iStart < 0) iStart = xml.IndexOf("<dsgmsg"); 
                             if (iStart >= 0) xml = xml.Substring(iStart); // Trim anything before root element
-                            _db.EnqueueXml(xml);
+                            _db.EnqueueXml(xml, GATEWAY_TAG, messageId, sequenceNumber);
                             using (StreamWriter sw = new StreamWriter($"{messageId}.txt", true))
                             {
                                 sw.WriteLine($"{xml}");
@@ -250,6 +250,7 @@ namespace DSGClient
         }
 
         private static readonly XmlToSqlLoader _db = new XmlToSqlLoader("Server=192.168.102.15;Database=DSGData;User Id=rubaiyat;Password=12345;TrustServerCertificate=True;");
+        public static XmlToSqlLoader Loader => _db; // Singleton
 
         private async Task SendAsync(byte[] payload)
         {

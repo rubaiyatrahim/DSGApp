@@ -242,8 +242,13 @@ namespace DSGTool
         {
             try
             {
-                await StopAllAsync();
-                DSGClient.DSGClient.DisposeSharedLoader();
+                // 1️⃣ Stop all clients first
+                if (_clientPool != null)
+                    await _clientPool.StopAllAsync();
+
+                // 2️⃣ Shutdown the shared XML loader AFTER clients are done
+                await DSGClient.DSGClient.Loader.ShutdownAsync();
+
                 base.OnFormClosing(e);
             }
             catch (Exception ex)
@@ -251,6 +256,7 @@ namespace DSGTool
                 Log("Error during shutdown: " + ex.Message);
             }
         }
+
 
         private async Task StopAllAsync()
         {
@@ -262,8 +268,8 @@ namespace DSGTool
                 if (_clientPool != null)
                 {
                     // Fire-and-forget stop to make UI responsive instantly
-                    var stopTask = _clientPool.StopAllAsync();
-                    await Task.WhenAny(stopTask, Task.Delay(200)); // wait max 200ms
+                    await _clientPool.StopAllAsync();
+                    //await Task.WhenAny(stopTask, Task.Delay(200)); // wait max 200ms
                 }
             }
             catch (Exception ex)

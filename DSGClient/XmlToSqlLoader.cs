@@ -6,8 +6,16 @@ namespace DSGClient
 {
     public sealed class XmlToSqlLoader : IDisposable
     {
+        private class XmlMessage
+        {
+            public string Xml { get; set; }
+            public string GatewayName { get; set; }
+            public int MessageId { get; set; }
+            public long SequenceNumber { get; set; }
+        }
+
         private readonly string _connectionString;
-        private readonly BlockingCollection<string> _queue = new();
+        private readonly BlockingCollection<XmlMessage> _queue = new();
         private readonly CancellationTokenSource _cts = new();
         private readonly Task _worker;
         private volatile bool _disposed;
@@ -19,44 +27,55 @@ namespace DSGClient
             _worker = Task.Run(ProcessQueueAsync);
         }
 
-        public void EnqueueXml(string xml)
+        public void EnqueueXml(string xml, string gatewayName, int messageId, long sequenceNumber)
         {
             if (_disposed)
             {
                 File.AppendAllText(_fallbackFile,
-                    $"{DateTime.UtcNow.ToString("yyyy-mm-dd hh:mm:ss.fff")} DROPPED (disposed) XML={xml}{Environment.NewLine}");
+                    $"{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff} DROPPED (disposed) Gateway={gatewayName}, MessageId={messageId}, SequenceNo={sequenceNumber} XML={xml}{Environment.NewLine}");
                 return;
             }
 
-            _queue.Add(xml);
+            try
+            {
+                _queue.Add(new XmlMessage
+                {
+                    Xml = xml,
+                    GatewayName = gatewayName,
+                    MessageId = messageId,
+                    SequenceNumber = sequenceNumber
+                });
+            }
+            catch (Exception ex)
+            {
+                File.AppendAllText(_fallbackFile,
+                    $"{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff} Exception: {ex.Message} Gateway={gatewayName}, MessageId={messageId}, SequenceNo={sequenceNumber} XML={xml}{Environment.NewLine}");
+            }
         }
 
         private async Task ProcessQueueAsync()
         {
             try
             {
-                foreach (var xml in _queue.GetConsumingEnumerable(_cts.Token))
+                foreach (var xmlMessage in _queue.GetConsumingEnumerable(_cts.Token))
                 {
                     try
                     {
-                        await InsertXmlAsync(xml);
+                        await InsertXmlAsync(xmlMessage);
                     }
                     catch (Exception ex)
                     {
                         File.AppendAllText(_fallbackFile,
-                            $"{DateTime.UtcNow.ToString("yyyy-mm-dd hh:mm:ss.fff")} ERROR {ex} XML={xml}{Environment.NewLine}");
+                            $"{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff} DROPPED (error) Gateway={xmlMessage.GatewayName}, MessageId={xmlMessage.MessageId}, SequenceNo={xmlMessage.SequenceNumber} XML={xmlMessage.Xml} Exception={ex.Message}{Environment.NewLine}");
                     }
                 }
             }
-            catch (OperationCanceledException)
-            {
-                // Normal shutdown
-            }
+            catch (OperationCanceledException) { }
         }
 
-        private async Task InsertXmlAsync(string xml)
+        private async Task InsertXmlAsync(XmlMessage xml)
         {
-            var doc = XDocument.Parse(xml);
+            var doc = XDocument.Parse(xml.Xml);
             var docRoot = doc.Root ?? throw new InvalidOperationException("Missing root element");
 
             string tableName = docRoot.Attribute("name")?.Value
@@ -65,17 +84,17 @@ namespace DSGClient
             using var conn = new SqlConnection(_connectionString);
             await conn.OpenAsync();
 
-            // Ensure table
+            // Ensure table exists
             string createSql = $@"
-IF OBJECT_ID('dbo.[{tableName}]', 'U') IS NULL
-    CREATE TABLE dbo.[{tableName}] (
-        Id INT IDENTITY PRIMARY KEY,
-        ReceivedTime DATETIME2(3) NOT NULL DEFAULT SYSUTCDATETIME()
-    );";
-            using (var cmd = new SqlCommand(createSql, conn))
-            {
-                await cmd.ExecuteNonQueryAsync();
-            }
+            IF OBJECT_ID('dbo.[{tableName}]', 'U') IS NULL
+                CREATE TABLE dbo.[{tableName}] (
+                    Id INT IDENTITY PRIMARY KEY,
+                    ReceivedTime DATETIME2(3) NOT NULL DEFAULT SYSUTCDATETIME(),
+                    GatewayName NVARCHAR(100) NOT NULL,
+                    MessageId INT NOT NULL,
+                    SequenceNumber BIGINT NOT NULL
+                );";
+            using (var cmd = new SqlCommand(createSql, conn)) await cmd.ExecuteNonQueryAsync();
 
             // Collect fields
             var fields = new Dictionary<string, string>();
@@ -83,21 +102,17 @@ IF OBJECT_ID('dbo.[{tableName}]', 'U') IS NULL
             {
                 string name = field.Attribute("name")?.Value;
                 string value = field.Value;
-
-                if (!string.IsNullOrEmpty(name))
-                    fields[name] = value;
+                if (!string.IsNullOrEmpty(name)) fields[name] = value;
             }
 
             // Ensure columns
             foreach (var kv in fields)
             {
                 string alterSql = $@"
-IF COL_LENGTH('dbo.[{tableName}]', '{kv.Key}') IS NULL
-    ALTER TABLE dbo.[{tableName}] ADD [{kv.Key}] NVARCHAR(MAX) NULL;";
-                using (var cmd = new SqlCommand(alterSql, conn))
-                {
-                    await cmd.ExecuteNonQueryAsync();
-                }
+                IF COL_LENGTH('dbo.[{tableName}]', '{kv.Key}') IS NULL
+                    ALTER TABLE dbo.[{tableName}] ADD [{kv.Key}] NVARCHAR(MAX) NULL;";
+                using var cmd = new SqlCommand(alterSql, conn);
+                await cmd.ExecuteNonQueryAsync();
             }
 
             // Insert row
@@ -106,28 +121,35 @@ IF COL_LENGTH('dbo.[{tableName}]', '{kv.Key}') IS NULL
             var parameters = fields.Values.Select((v, i) => new SqlParameter($"@p{i}", v)).ToArray();
 
             string insertSql = $@"
-INSERT INTO dbo.[{tableName}] ({columnList})
-VALUES ({paramList});";
+            INSERT INTO dbo.[{tableName}] (GatewayName, MessageId, SequenceNumber, {columnList})
+            VALUES (@gw, @mid, @seq, {paramList});";
 
-            using (var cmd = new SqlCommand(insertSql, conn))
-            {
-                cmd.Parameters.AddRange(parameters);
-                await cmd.ExecuteNonQueryAsync();
-            }
+            using var insertCmd = new SqlCommand(insertSql, conn);
+            insertCmd.Parameters.Add(new SqlParameter("@gw", xml.GatewayName));
+            insertCmd.Parameters.Add(new SqlParameter("@mid", xml.MessageId));
+            insertCmd.Parameters.Add(new SqlParameter("@seq", xml.SequenceNumber));
+            insertCmd.Parameters.AddRange(parameters);
+
+            await insertCmd.ExecuteNonQueryAsync();
+        }
+
+        public async Task ShutdownAsync()
+        {
+            if (_disposed) return;
+
+            _disposed = true;
+            _queue.CompleteAdding();
+            _cts.Cancel();
+
+            try { await _worker; } catch { /* ignore */ }
         }
 
         public void Dispose()
         {
-            if (_disposed) return;
-            _disposed = true;
-
-            _queue.CompleteAdding();
-            _cts.Cancel();
-
-            try { _worker.Wait(); } catch { /* ignore */ }
-
+            ShutdownAsync().GetAwaiter().GetResult();
             _cts.Dispose();
             _queue.Dispose();
         }
     }
+
 }
