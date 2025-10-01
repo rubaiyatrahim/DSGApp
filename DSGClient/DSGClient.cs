@@ -203,15 +203,31 @@ namespace DSGClient
                         // Show the XML string
                         Console.WriteLine(GATEWAY_TAG + ">> XML Received:" + Environment.NewLine + xml + Environment.NewLine);
 
-                        // Save Message to file named <MessageId>.txt
                         if (messageId != 0 && !string.IsNullOrWhiteSpace(xml))
                         {
+                            string messageName = messageId.ToString(); // Or map ID → name via MessageType table
+                            xml = xml.Replace("\0", ""); // Remove null characters if any
+                            //xml = xml.Replace("\r", "").Replace("\n", "").Replace("\t", ""); // Remove new lines and tabs
+                            //xml = xml.Replace("<?xml version=\"1.0\" encoding=\"utf-8\"?>", ""); // Remove XML declaration if any
+                            int iStart = xml.IndexOf("<smsg");
+                            if (iStart < 0) iStart = xml.IndexOf("<dsgmsg"); 
+                            if (iStart >= 0) xml = xml.Substring(iStart); // Trim anything before root element
+                            _db.InsertXml(xml);
                             using (StreamWriter sw = new StreamWriter($"{messageId}.txt", true))
                             {
                                 sw.WriteLine($"{xml}");
                             }
                         }
-                            
+
+                        // Save Message to file named <MessageId>.txt
+                        //if (messageId != 0 && !string.IsNullOrWhiteSpace(xml))
+                        //{
+                        //    using (StreamWriter sw = new StreamWriter($"{messageId}.txt", true))
+                        //    {
+                        //        sw.WriteLine($"{xml}");
+                        //    }
+                        //}
+
                     }
                 }
             }
@@ -232,6 +248,8 @@ namespace DSGClient
                 _connected = false;
             }
         }
+
+        private static readonly XmlToSqlLoader _db = new XmlToSqlLoader("Server=192.168.102.15;Database=DSGData;User Id=rubaiyat;Password=12345;TrustServerCertificate=True;");
 
         private async Task SendAsync(byte[] payload)
         {
