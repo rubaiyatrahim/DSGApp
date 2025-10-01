@@ -212,7 +212,7 @@ namespace DSGClient
                             int iStart = xml.IndexOf("<smsg");
                             if (iStart < 0) iStart = xml.IndexOf("<dsgmsg"); 
                             if (iStart >= 0) xml = xml.Substring(iStart); // Trim anything before root element
-                            _db.InsertXml(xml);
+                            _db.EnqueueXml(xml);
                             using (StreamWriter sw = new StreamWriter($"{messageId}.txt", true))
                             {
                                 sw.WriteLine($"{xml}");
@@ -379,6 +379,14 @@ namespace DSGClient
                 _connectionCts = null;
                 _connected = false;
             }
+        }
+        public static void DisposeSharedLoader()
+        {
+            try
+            {
+                _db?.Dispose();
+            }
+            catch { /* ignore */ }
         }
     }
 }

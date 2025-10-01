@@ -243,6 +243,7 @@ namespace DSGTool
             try
             {
                 await StopAllAsync();
+                DSGClient.DSGClient.DisposeSharedLoader();
                 base.OnFormClosing(e);
             }
             catch (Exception ex)
