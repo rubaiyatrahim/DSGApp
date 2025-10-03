@@ -11,6 +11,7 @@ namespace DSGTool
         private Label lblTotal;
         private Label lblTotalExceptHB;
         private FlowLayoutPanel pnlMessageTypes;
+        private FlowLayoutPanel pnlMessageTypesDB;
         private Button btnStart;
         private Button btnDownload;
         private Button btnStop;
@@ -35,14 +36,14 @@ namespace DSGTool
             this.Padding = new Padding(10);
             this.Margin = new Padding(10);
             this.Width = 260;
-            this.Height = 180;
+            this.Height = 200;
 
             // Main Layout
             var layout = new TableLayoutPanel()
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
-                RowCount = 6,
+                RowCount = 7,
                 AutoSize = true
             };
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Title
@@ -50,6 +51,7 @@ namespace DSGTool
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Total
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Total except HB
             layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); // Message types (expandable)
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); // Message types DB (expandable))
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Buttons
 
             lblTitle = new Label()
@@ -93,6 +95,13 @@ namespace DSGTool
                 WrapContents = true
             };
 
+            pnlMessageTypesDB = new FlowLayoutPanel()
+            {
+                Dock = DockStyle.Fill,
+                AutoScroll = true,
+                WrapContents = true
+            };
+
             // Buttons Row
             var buttonPanel = new FlowLayoutPanel
             {
@@ -119,7 +128,8 @@ namespace DSGTool
             layout.Controls.Add(lblTotal, 0, 2);
             layout.Controls.Add(lblTotalExceptHB, 0, 3);
             layout.Controls.Add(pnlMessageTypes, 0, 4);
-            layout.Controls.Add(buttonPanel, 0, 5);
+            layout.Controls.Add(pnlMessageTypesDB, 0, 5);
+            layout.Controls.Add(buttonPanel, 0, 6);
 
             this.Controls.Add(layout);
         }
@@ -161,6 +171,37 @@ namespace DSGTool
                     Tag = msgType
                 };
                 pnlMessageTypes.Controls.Add(lbl);
+            }
+        }
+        public void SetDbLabelColor(string msgType, Color color)
+        {
+            var existing = pnlMessageTypesDB.Controls
+                .OfType<Label>()
+                .FirstOrDefault(l => l.Tag?.ToString() == msgType);
+            if (existing != null)
+            {
+                existing.ForeColor = color;
+            }
+        }
+        public void UpdateMessageTypeCountDB(string msgType, long count)
+        {
+            // Find label if exists, otherwise create one
+            var existing = pnlMessageTypesDB.Controls
+                .OfType<Label>()
+                .FirstOrDefault(l => l.Tag?.ToString() == msgType);
+            if (existing != null)
+            {
+                existing.Text = $"{msgType} (DB): {count}";
+            }
+            else
+            {
+                var lbl = new Label()
+                {
+                    Text = $"{msgType} (DB): {count}",
+                    AutoSize = true,
+                    Tag = msgType
+                };
+                pnlMessageTypesDB.Controls.Add(lbl);
             }
         }
 

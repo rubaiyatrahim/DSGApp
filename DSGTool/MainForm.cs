@@ -65,6 +65,7 @@ namespace DSGTool
             _clientPool = loader.LoadClients();
             _clientPool.MessageReceived += OnMessageReceived;
             _clientPool.StatusChanged += OnStatusChanged;
+            DSGClient.DSGClient.Loader.MessageReceivedDB += OnMessageReceivedDB;
         }
 
         private void LoadSampleDataFromCode()
@@ -141,6 +142,21 @@ namespace DSGTool
                 card.UpdateTotalCount(stats.TotalMessages);
                 card.UpdateTotalExceptHBCount(stats.TotalMessages - stats.GetCount("0"));
                 card.UpdateMessageTypeCount(msgType, stats.GetCount(msgType));
+            }
+        }
+
+        private void OnMessageReceivedDB(string gatewayName, string messageId, string tableName, long messageCount)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action(() => OnMessageReceivedDB(gatewayName, messageId, tableName, messageCount)));
+                return;
+            }
+            if (_stats.TryGetValue(gatewayName, out var stats) && _cards.TryGetValue(gatewayName, out var card))
+            {
+                stats.SetMessageCountDB(messageId, messageCount);                
+                card.UpdateMessageTypeCountDB(messageId, messageCount);
+                card.SetDbLabelColor(messageId, messageCount != stats.GetCount(messageId) ? Color.Red : Color.Green);
             }
         }
 

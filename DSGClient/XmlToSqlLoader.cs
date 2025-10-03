@@ -21,6 +21,8 @@ namespace DSGClient
         private volatile bool _disposed;
         private readonly string _fallbackFile = "XmlToSqlLoader_Failed.log";
 
+        public event Action<string, string, string, long>? MessageReceivedDB; // gatewayName, messageId, tableName, messageCount
+
         public XmlToSqlLoader(string connectionString)
         {
             _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
@@ -32,7 +34,7 @@ namespace DSGClient
             if (_disposed)
             {
                 File.AppendAllText(_fallbackFile,
-                    $"{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff} DROPPED (disposed) Gateway={gatewayName}, MessageId={messageId}, SequenceNo={sequenceNumber} XML={xml}{Environment.NewLine}");
+                    $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} DROPPED (disposed) Gateway={gatewayName}, MessageId={messageId}, SequenceNo={sequenceNumber} XML={xml}{Environment.NewLine}");
                 return;
             }
 
@@ -49,7 +51,7 @@ namespace DSGClient
             catch (Exception ex)
             {
                 File.AppendAllText(_fallbackFile,
-                    $"{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff} Exception: {ex.Message} Gateway={gatewayName}, MessageId={messageId}, SequenceNo={sequenceNumber} XML={xml}{Environment.NewLine}");
+                    $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} Exception: {ex.Message} Gateway={gatewayName}, MessageId={messageId}, SequenceNo={sequenceNumber} XML={xml}{Environment.NewLine}");
             }
         }
 
@@ -66,7 +68,7 @@ namespace DSGClient
                     catch (Exception ex)
                     {
                         File.AppendAllText(_fallbackFile,
-                            $"{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff} DROPPED (error) Gateway={xmlMessage.GatewayName}, MessageId={xmlMessage.MessageId}, SequenceNo={xmlMessage.SequenceNumber} XML={xmlMessage.Xml} Exception={ex.Message}{Environment.NewLine}");
+                            $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} DROPPED (error) Gateway={xmlMessage.GatewayName}, MessageId={xmlMessage.MessageId}, SequenceNo={xmlMessage.SequenceNumber} XML={xmlMessage.Xml} Exception={ex.Message}{Environment.NewLine}");
                     }
                 }
             }
@@ -131,6 +133,32 @@ namespace DSGClient
             insertCmd.Parameters.AddRange(parameters);
 
             await insertCmd.ExecuteNonQueryAsync();
+            var messageCount = GetMessageCount(conn, tableName);
+            OnMessageReceivedDB(xml.GatewayName, xml.MessageId.ToString(), tableName, (long)messageCount);
+        }
+
+        private void OnMessageReceivedDB(string gatewayName, string messageId, string tableName, long messageCount)
+        {
+            var handler = MessageReceivedDB; // local copy for thread safety
+            if (handler != null)
+            {
+                try
+                {
+                    handler.Invoke(gatewayName, messageId, tableName, messageCount);
+                }
+                catch (Exception ex)
+                {
+                    // Never let an exception in a subscriber crash this class
+                    Console.WriteLine($"[XmlToSqlLoader] Error in MessageReceivedDB handler: {ex}");
+                }
+            }
+        }
+        private int GetMessageCount(SqlConnection conn, string tableName)
+        {
+            string countSql = $"SELECT COUNT(1) FROM dbo.[{tableName}];";
+            using var cmd = new SqlCommand(countSql, conn);
+            var messageCount = cmd.ExecuteScalar();
+            return (int)messageCount;
         }
 
         public async Task ShutdownAsync()

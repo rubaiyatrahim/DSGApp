@@ -212,7 +212,7 @@ namespace DSGClient
                             int iStart = xml.IndexOf("<smsg");
                             if (iStart < 0) iStart = xml.IndexOf("<dsgmsg"); 
                             if (iStart >= 0) xml = xml.Substring(iStart); // Trim anything before root element
-                            _db.EnqueueXml(xml, GATEWAY_TAG, messageId, sequenceNumber);
+                            _db.EnqueueXml(xml, _gateway.GatewayName, messageId, sequenceNumber);
                             using (StreamWriter sw = new StreamWriter($"{messageId}.txt", true))
                             {
                                 sw.WriteLine($"{xml}");
