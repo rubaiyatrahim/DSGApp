@@ -1,6 +1,7 @@
 ﻿using DSGClient;
 using DSGTool.Data.Models;
 using System.Collections.Concurrent;
+using System.Reflection;
 using System.Text;
 
 namespace DSGTool
@@ -27,7 +28,9 @@ namespace DSGTool
         private readonly ConcurrentQueue<string> _logQueue = new();
         private System.Windows.Forms.Timer _logTimer;
 
-
+        private string _logFolder = "";
+        private string _logFile = "/DSGClient_log.txt";
+        private string GetLogTime() => DateTime.Now.ToString("[dd-MMM-yyyy HH:mm:ss.fff]");
         public MainForm()
         {
             InitializeComponent();
@@ -36,6 +39,16 @@ namespace DSGTool
             _logTimer = new System.Windows.Forms.Timer { Interval = 50 };
             _logTimer.Tick += (s, e) => FlushLogsToUI();
 
+            SetLogPath();
+        }
+
+        private void SetLogPath()
+        {
+            string exePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            _logFolder = Path.Combine(exePath, $"{DateTime.Now:yyyyMMdd}");
+            if (!Directory.Exists(_logFolder))
+                Directory.CreateDirectory(_logFolder);
+            _logFile = Path.Combine(_logFolder, "DSGClient_log.txt");
         }
 
         private void MainForm_Load(object sender, EventArgs e)
@@ -210,11 +223,11 @@ namespace DSGTool
         // Queue log messages instead of blocking UI
         private void Log(string message)
         {
-            string logTime = DateTime.Now.ToString("[dd-MMM-yyyy HH:mm:ss.fff]");
+            string logTime = GetLogTime();
             _logQueue.Enqueue($"{logTime} {message}");
 
             // Log to file
-            using (StreamWriter sw = new StreamWriter("DSGClient_Log.txt", true))
+            using (StreamWriter sw = new StreamWriter(_logFile, true))
             {
                 sw.WriteLine($"{logTime} {message}");
             }

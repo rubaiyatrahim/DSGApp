@@ -1,4 +1,5 @@
 ﻿using System.Net.Sockets;
+using System.Reflection;
 using System.Text;
 
 namespace DSGClient
@@ -38,6 +39,10 @@ namespace DSGClient
         private Task _readTask;         // Handle to the read task.
         private Task _heartbeatTask;    // Handle to the heartbeat task.
 
+        private string _logFolder = "";
+        private string GetMessageLogPath(int messageId) => Path.Combine(_logFolder, $"{messageId}.txt");
+        private string GetLogTime() => DateTime.Now.ToString("[dd-MMM-yyyy HH:mm:ss.fff]");
+
         public DSGClient(Gateway gateway, List<MessageType> messageTypes, string startingSequenceNumber, string endingSequenceNumber, int heartbeatSeconds = 2)
         {
             _gateway = gateway;
@@ -45,8 +50,17 @@ namespace DSGClient
             _startingSequenceNumber = startingSequenceNumber;
             _endingSequenceNumber = endingSequenceNumber;
             _heartbeatSeconds = heartbeatSeconds;
+            
+            SetLogPath();
         }
 
+        private void SetLogPath()
+        {
+            string exePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            _logFolder = Path.Combine(exePath, $"{DateTime.Now:yyyyMMdd}");
+            if (!Directory.Exists(_logFolder))
+                Directory.CreateDirectory(_logFolder);
+        }
         public async Task DownloadAsync()
         {
             try
@@ -213,9 +227,9 @@ namespace DSGClient
                             if (iStart < 0) iStart = xml.IndexOf("<dsgmsg"); 
                             if (iStart >= 0) xml = xml.Substring(iStart); // Trim anything before root element
                             _db.EnqueueXml(xml, _gateway.GatewayName, messageId, sequenceNumber);
-                            using (StreamWriter sw = new StreamWriter($"{messageId}.txt", true))
+                            using (StreamWriter sw = new StreamWriter(GetMessageLogPath(messageId), true))
                             {
-                                sw.WriteLine($"{xml}");
+                                sw.WriteLine(GetLogTime() + Environment.NewLine + xml);
                             }
                         }
 
