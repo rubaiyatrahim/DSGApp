@@ -85,7 +85,7 @@ namespace DSGClient
             {
                 await SendAsync(XmlManager.BuildMessageLogin(_gateway.Username, _gateway.Password, _messageTypes));
                 Console.WriteLine(GATEWAY_TAG + "<< Login sent.");
-                StatusChanged.Invoke(_gateway.GatewayName, true);
+                StatusChanged.Invoke(_gateway.GatewayName, _connected);
             }
             catch (Exception ex)
             {
@@ -215,7 +215,7 @@ namespace DSGClient
                             continue;
                         }
                         // Show the XML string
-                        Console.WriteLine(GATEWAY_TAG + ">> XML Received:" + Environment.NewLine + xml + Environment.NewLine);
+                        Console.WriteLine(GATEWAY_TAG + ">> XML Received:" + Environment.NewLine + xml.Replace("\0", "") + Environment.NewLine);
 
                         if (messageId != 0 && !string.IsNullOrWhiteSpace(xml))
                         {
@@ -269,7 +269,10 @@ namespace DSGClient
         private async Task SendAsync(byte[] payload)
         {
             if (_stream is null || !_connected)
-                throw new InvalidOperationException(GATEWAY_TAG + "<< Not connected.");
+            {
+                StatusChanged.Invoke(_gateway.GatewayName, false);
+                throw new InvalidOperationException(GATEWAY_TAG + "<< Not connected."); 
+            }
 
             // Wait for a free send slot.
             await _sendLock.WaitAsync();
@@ -319,6 +322,8 @@ namespace DSGClient
             Console.WriteLine($"Connecting to {_gateway.GatewayName} of environment {_gateway.EnvironmentName} at {_gateway.Host}:{_gateway.Port}...");
             await _client.ConnectAsync(_gateway.Host, _gateway.Port);
             _stream = _client.GetStream();
+            if (!_client.Connected || !_stream.CanRead || !_stream.CanWrite)
+                throw new InvalidOperationException(GATEWAY_TAG + "<< Connection failed.");
             _connected = true;
             Console.WriteLine(GATEWAY_TAG + "<< Connected.");
         }
