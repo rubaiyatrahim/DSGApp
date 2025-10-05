@@ -114,8 +114,8 @@ namespace DSGTool
             };
 
             btnStart = new Button { Text = "Start", Width = 60 };
-            btnDownload = new Button { Text = "Download", Width = 80 };
-            btnStop = new Button { Text = "Stop", Width = 60 };
+            btnDownload = new Button { Text = "Download", Width = 80, Enabled = false };
+            btnStop = new Button { Text = "Stop", Width = 60, Enabled = false };
 
             btnStart.Click += (s, e) => StartClicked?.Invoke(GatewayName);
             btnDownload.Click += (s, e) => DownloadClicked?.Invoke(GatewayName);
@@ -196,9 +196,22 @@ namespace DSGTool
         }
         public void UpdateStatus(bool? connected)
         {
-            if (connected is null) return;
-            lblStatus.Text = connected.Value ? "Connected" : "Disconnected";
-            lblStatus.ForeColor = connected.Value ? Color.Green : Color.Red;
+            if (connected.Value)
+            {
+                lblStatus.Text = "Connected";
+                lblStatus.ForeColor = Color.Green;
+                btnStart.Enabled = false;
+                btnDownload.Enabled = true;
+                btnStop.Enabled = true;
+            }
+            else
+            {
+                lblStatus.Text = "Disconnected";
+                lblStatus.ForeColor = Color.Red;
+                btnStart.Enabled = true;
+                btnDownload.Enabled = false;
+                btnStop.Enabled = false;
+            }
         }
 
         public void UpdateTotalCount(int total)

@@ -206,10 +206,12 @@ namespace DSGTool
             {
                 await _clientPool.StartAllAsync(_cts.Token);
                 Log("Clients pool started.");
+                SetButtonStatesOnConnect(true);
             }
             catch (Exception ex)
             {
                 Log("Connection error: " + ex.Message);
+                SetButtonStatesOnConnect(false);
             }
         }
 
@@ -229,7 +231,11 @@ namespace DSGTool
             }
         }
 
-        private async void btnStop_Click(object sender, EventArgs e) => await StopAllAsync();
+        private async void btnStop_Click(object sender, EventArgs e) 
+        { 
+            await StopAllAsync();
+            SetButtonStatesOnConnect(false);
+        }
 
         private async void btnQuit_Click(object sender, EventArgs e) => Close();
 
@@ -338,7 +344,8 @@ namespace DSGTool
             if (_clientPool != null)
             {
                 BuildCards();
-                SetButtonStatesOnLoad(true);
+                btnLoadClients.Enabled = false;
+                SetButtonStatesOnConnect(false);
             }
         }
 
@@ -346,6 +353,13 @@ namespace DSGTool
         {
             btnLoadClients.Enabled = !enabled;
             btnConnect.Enabled = enabled;
+            btnDownload.Enabled = enabled;
+            btnHeartbeat.Enabled = enabled;
+            btnStop.Enabled = enabled;
+        }
+        private void SetButtonStatesOnConnect(bool enabled)
+        {
+            btnConnect.Enabled = !enabled;
             btnDownload.Enabled = enabled;
             btnHeartbeat.Enabled = enabled;
             btnStop.Enabled = enabled;
