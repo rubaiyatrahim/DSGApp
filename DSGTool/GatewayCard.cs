@@ -15,6 +15,7 @@ namespace DSGTool
         private Button btnStart;
         private Button btnDownload;
         private Button btnStop;
+        private Button btnDelete;
 
         public string GatewayName { get; private set; }
 
@@ -22,6 +23,7 @@ namespace DSGTool
         public event Action<string>? StartClicked;
         public event Action<string>? DownloadClicked;
         public event Action<string>? StopClicked;
+        public event Func<string, Task>? DeleteClickedAsync;
 
         public GatewayCard(string gatewayName)
         {
@@ -36,14 +38,14 @@ namespace DSGTool
             this.Padding = new Padding(10);
             this.Margin = new Padding(10);
             this.Width = 260;
-            this.Height = 200;
+            this.Height = 240;
 
             // Main Layout
             var layout = new TableLayoutPanel()
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
-                RowCount = 7,
+                RowCount = 8,
                 AutoSize = true
             };
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Title
@@ -53,6 +55,7 @@ namespace DSGTool
             layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); // Message types (expandable)
             layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); // Message types DB (expandable))
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Buttons
+            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Delete Button
 
             lblTitle = new Label()
             {
@@ -122,6 +125,24 @@ namespace DSGTool
             buttonPanel.Controls.Add(btnDownload);
             buttonPanel.Controls.Add(btnStop);
 
+            btnDelete = new Button
+            {
+                Text = "Delete Messages",
+                Width = 180,
+                BackColor = Color.FromArgb(255, 240, 240),
+                ForeColor = Color.DarkRed
+            };
+            btnDelete.Click += async (s, e) => await HandleDeleteClickAsync();
+
+            var deletePanel = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.LeftToRight,
+                Height = 35,
+                WrapContents = true
+            };
+            deletePanel.Controls.Add(btnDelete);
+
             // Add everything to layout
             layout.Controls.Add(lblTitle, 0, 0);
             layout.Controls.Add(lblStatus, 0, 1);
@@ -130,10 +151,49 @@ namespace DSGTool
             layout.Controls.Add(pnlMessageTypes, 0, 4);
             layout.Controls.Add(pnlMessageTypesDB, 0, 5);
             layout.Controls.Add(buttonPanel, 0, 6);
+            layout.Controls.Add(deletePanel, 0, 7);
 
             this.Controls.Add(layout);
         }
 
+        private async Task HandleDeleteClickAsync()
+        {
+            if (DeleteClickedAsync == null)
+                return;
+
+            var confirm = MessageBox.Show(
+                $"Are you sure you want to delete all messages for gateway '{GatewayName}'?",
+                "Confirm Deletion",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning);
+
+            if (confirm != DialogResult.Yes)
+                return;
+
+            btnDelete.Enabled = false;
+            btnDelete.ForeColor = Color.Gray;
+
+            try
+            {
+                await DeleteClickedAsync.Invoke(GatewayName);
+                MessageBox.Show($"Messages for '{GatewayName}' deleted successfully.",
+                    "Delete Completed",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error deleting messages for {GatewayName}:\n{ex.Message}",
+                    "Delete Failed",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+            finally
+            {
+                btnDelete.Enabled = true;
+                btnDelete.ForeColor = Color.DarkRed;
+            }
+        }
         public void UpdateStatus(bool? connected)
         {
             if (connected is null) return;
@@ -208,7 +268,9 @@ namespace DSGTool
         public void ResetCounts()
         {
             lblTotal.Text = "Total: 0";
+            lblTotalExceptHB.Text = "Total except HB: 0";
             pnlMessageTypes.Controls.Clear();
+            pnlMessageTypesDB.Controls.Clear();
         }
     }
 }

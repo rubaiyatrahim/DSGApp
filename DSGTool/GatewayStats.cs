@@ -29,6 +29,13 @@ namespace DSGTool
                 _messageCounts[msgType] = 1; 
         }
 
+        public void ResetCounts()
+        {
+            TotalMessages = 0;
+            _messageCounts.Clear();
+            _messageCountsDB.Clear();
+        }
+
         public void SetMessageCountDB(string messageId, long messageCount)
         {
             _messageCountsDB[messageId] = messageCount;

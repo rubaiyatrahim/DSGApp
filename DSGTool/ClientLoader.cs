@@ -51,6 +51,7 @@ public class ClientLoader
     public int AddMessageType(MessageType mt) => _db.InsertMessageType(mt);
     public void AddGatewayMessageType(int gId, int mId) => _db.InsertGatewayMessageType(gId, mId);
     public void DeleteAllMasterData() => _db.DeleteAllMasterData();
+    public void DeleteMessagesByGateway(string gatewayName) => _db.DeleteMessagesByGateway(gatewayName);
     public int AddDSGClient(DSGClientEntity dce) => _db.InsertDSGClient(dce);
     private List<int> GetMessageTypeIdsForGateway(int gId) => _db.GetMessageTypeIdsForGateway(gId);
 }

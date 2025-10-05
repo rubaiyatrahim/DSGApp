@@ -31,6 +31,7 @@ namespace DSGTool
         private string _logFolder = "";
         private string _logFile = "/DSGClient_log.txt";
         private string GetLogTime() => DateTime.Now.ToString("[dd-MMM-yyyy HH:mm:ss.fff]");
+        private ClientLoader loader;
         public MainForm()
         {
             InitializeComponent();
@@ -69,7 +70,7 @@ namespace DSGTool
 
         private void LoadClientsPool()
         {
-            var loader = new ClientLoader();
+            loader = new ClientLoader();
 
             //LoadSampleDataFromCode();
             //loader.DeleteAllMasterData();
@@ -134,6 +135,18 @@ namespace DSGTool
                 card.StartClicked += async gw => await client.StartAsync(_cts.Token);
                 card.DownloadClicked += async gw => await client.DownloadAsync();
                 card.StopClicked += async gw => await client.StopAsync();
+                card.DeleteClickedAsync += async gw => {
+                    await Task.Run(() =>
+                    {
+                        loader.DeleteMessagesByGateway(gatewayName);
+                        Log($"All messages for gateway {gatewayName} deleted from database.");
+                        if (card.InvokeRequired)
+                            card.Invoke(() => card.ResetCounts());
+                        else
+                            card.ResetCounts();
+                        stats.ResetCounts();
+                    });
+                };
 
                 flowLayoutPanel1.Controls.Add(card);
                 _cards[gatewayName] = card;

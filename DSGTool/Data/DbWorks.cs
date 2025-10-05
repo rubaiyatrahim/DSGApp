@@ -71,6 +71,11 @@ namespace DSGTool.Data
         public void DeleteGateway(string gatewayId)
             => ExecuteSql("DELETE FROM Gateway WHERE Id = @id", new SqlParameter("@id", gatewayId));
 
+        public void DeleteMessagesByGateway(string gatewayName)
+        {
+            ExecuteProcedure("usp_ClearMessageTablesByGateway", new SqlParameter("@GatewayName", gatewayName));
+        }
+
         // ===========================
         // MessageType Methods
         // ===========================
