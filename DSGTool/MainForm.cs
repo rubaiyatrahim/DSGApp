@@ -25,22 +25,21 @@ namespace DSGTool
         private Dictionary<string, GatewayStats> _stats = new();
 
         // Logging
-        private readonly ConcurrentQueue<string> _logQueue = new();
-        private System.Windows.Forms.Timer _logTimer;
-
-        private string _logFolder = "";
-        private string _logFile = "/DSGClient_log.txt";
         private string GetLogTime() => DateTime.Now.ToString("[dd-MMM-yyyy HH:mm:ss.fff]");
+        private readonly ConcurrentQueue<string> _logUIQueue = new();
+        private readonly BlockingCollection<string> _logFileQueue = new();
+        private System.Threading.Timer _logUIFlushTimer;
+        private string _logFolder = "";
+        private string _logFile = "DSGClient_log.txt";
+        
         private ClientLoader loader;
+
         public MainForm()
         {
             InitializeComponent();
-
-            // Setup periodic log flush (Timer runs on UI thread)
-            _logTimer = new System.Windows.Forms.Timer { Interval = 50 };
-            _logTimer.Tick += (s, e) => FlushLogsToUI();
-
             SetLogPath();
+            StartLogUIWriterTask();
+            StartLogFileWriterTask();
         }
 
         private void SetLogPath()
@@ -49,23 +48,17 @@ namespace DSGTool
             _logFolder = Path.Combine(exePath, $"{DateTime.Now:yyyyMMdd}");
             if (!Directory.Exists(_logFolder))
                 Directory.CreateDirectory(_logFolder);
-            _logFile = Path.Combine(_logFolder, "DSGClient_log.txt");
+            _logFile = Path.Combine(_logFolder, _logFile);
         }
 
         private void MainForm_Load(object sender, EventArgs e)
         {
-            // Initially disable buttons until clients are loaded
-            SetButtonStatesOnLoad(false);
-            Log("Application started.");
-
             // Create cancellation token
             _cts = new CancellationTokenSource();
 
-            // Hook Console.WriteLine to Log() method
-            Console.SetOut(new TextBoxWriter(Log));
-
-            // Initialize timer to flush logs periodically
-            _logTimer.Start();           
+            // Initially disable buttons until clients are loaded
+            SetButtonStatesOnLoad(false);
+            Log("Application started.");
         }
 
         private void LoadClientsPool()
@@ -239,43 +232,67 @@ namespace DSGTool
 
         private async void btnQuit_Click(object sender, EventArgs e) => Close();
 
+        private void StartLogUIWriterTask()
+        {
+            // Hook Console.WriteLine to Log() method
+            Console.SetOut(new TextBoxWriter(Log));
+
+            // Initialize timer to flush logs periodically
+            _logUIFlushTimer = new System.Threading.Timer(_ => FlushLogsToUI(), null, 0, 50);
+        }
+        private void StartLogFileWriterTask()
+        {
+            Task.Run(async () =>
+            {
+                try
+                {
+                    using var writer = new StreamWriter(_logFile, append: true, Encoding.UTF8);
+                    foreach (var line in _logFileQueue.GetConsumingEnumerable())
+                    {
+                        await writer.WriteLineAsync(line);
+                        await writer.FlushAsync();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // If file write fails, show in UI
+                    _logUIQueue.Enqueue($"[FileWriterError] {ex.Message}");
+                }
+            });
+        }
+
         // Queue log messages instead of blocking UI
         private void Log(string message)
         {
             string logTime = GetLogTime();
-            _logQueue.Enqueue($"{logTime} {message}");
+            string formatted = $"{logTime} {message}";
 
-            // Log to file
-            using (StreamWriter sw = new StreamWriter(_logFile, true))
-            {
-                sw.WriteLine($"{logTime} {message}");
-            }
-
+            _logUIQueue.Enqueue(formatted);
+            _logFileQueue.Add(formatted);
         }
 
-        // Flush queue to UI every 50ms
+        // Flush queue to UI 
         private void FlushLogsToUI()
         {
-            // If queue empty, nothing to do
-            if (_logQueue.IsEmpty) return;
+            if (_logUIQueue.IsEmpty) return;
 
-            // Ensure we run on UI thread
-            if (InvokeRequired)
+            if (txtLog.InvokeRequired)
             {
-                BeginInvoke(new Action(FlushLogsToUI));
+                txtLog.BeginInvoke(new Action(FlushLogsToUI));
                 return;
             }
 
             var sb = new StringBuilder();
-            while (_logQueue.TryDequeue(out var entry))
+            while (_logUIQueue.TryDequeue(out var entry))
                 sb.AppendLine(entry);
 
-            if (sb.Length == 0) return;
+            if (sb.Length > 0)
+            {
+                txtLog.AppendText(sb.ToString());
+                txtLog.ScrollToCaret();
+            }
 
-            txtLog.AppendText(sb.ToString());
-            txtLog.ScrollToCaret();
-
-            // Trim if grows too large for performance
+            // Trim to prevent memory issues
             const int maxChars = 100_000;
             const int keepChars = 40_000;
             if (txtLog.TextLength > maxChars)
