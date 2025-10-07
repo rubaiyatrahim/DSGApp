@@ -13,6 +13,7 @@ namespace DSGTool
 
         // Cancellation token
         private CancellationTokenSource _cts;
+        private CancellationTokenSource _logCts = new CancellationTokenSource();
 
         // Connection properties
         private const string HOST = "192.168.17.14";
@@ -28,7 +29,6 @@ namespace DSGTool
         private string GetLogTime() => DateTime.Now.ToString("[dd-MMM-yyyy HH:mm:ss.fff]");
         private readonly ConcurrentQueue<string> _logUIQueue = new();
         private readonly BlockingCollection<string> _logFileQueue = new();
-        private System.Threading.Timer _logUIFlushTimer;
         private string _logFolder = "";
         private string _logFile = "DSGClient_log.txt";
         
@@ -236,9 +236,52 @@ namespace DSGTool
             // Hook Console.WriteLine to Log() method
             Console.SetOut(new TextBoxWriter(Log));
 
-            // Initialize timer to flush logs periodically
-            _logUIFlushTimer = new System.Threading.Timer(_ => FlushLogsToUI(), null, 0, 50);
+            Task.Run(async () =>
+            {
+                while (!_logCts.Token.IsCancellationRequested)
+                {
+                    await Task.Delay(50); // small interval
+
+                    if (_logUIQueue.IsEmpty)
+                        continue;
+
+                    FlushLogsBatchSafe();
+                }
+            }, _logCts.Token);
         }
+
+        private void FlushLogsBatchSafe()
+        {
+            if (txtLog.IsDisposed || txtLog.Disposing)
+                return;
+
+            if (txtLog.InvokeRequired)
+            {
+                try
+                {
+                    txtLog.Invoke(new Action(FlushLogsBatchSafe));
+                }
+                catch (ObjectDisposedException)
+                {
+                    return; // safely ignore
+                }
+            }
+            else
+            {
+                // Flush all queued logs at once
+                if (_logUIQueue.IsEmpty) return;
+
+                var sb = new System.Text.StringBuilder();
+                while (_logUIQueue.TryDequeue(out var line))
+                {
+                    sb.AppendLine(line);
+                }
+
+                txtLog.AppendText(sb.ToString());
+                txtLog.ScrollToCaret();
+            }
+        }        
+
         private void StartLogFileWriterTask()
         {
             Task.Run(async () =>
@@ -306,12 +349,14 @@ namespace DSGTool
         {
             try
             {
-                // 1️⃣ Stop all clients first
+                // Stop all clients first
                 if (_clientPool != null)
                     await _clientPool.StopAllAsync();
 
-                // 2️⃣ Shutdown the shared XML loader AFTER clients are done
+                // Shutdown the shared XML loader AFTER clients are done
                 await DSGClient.DSGClient.Loader.ShutdownAsync();
+
+                _logCts.Cancel();
 
                 base.OnFormClosing(e);
             }
@@ -353,6 +398,7 @@ namespace DSGTool
 
         private async void btnLoadClients_Click(object sender, EventArgs e)
         {
+            btnLoadClients.Enabled = false;
             await Task.Run(() =>
             {
                 LoadClientsPool();
@@ -360,9 +406,10 @@ namespace DSGTool
             if (_clientPool != null)
             {
                 BuildCards();
-                btnLoadClients.Enabled = false;
                 SetButtonStatesOnConnect(false);
             }
+            else
+                btnLoadClients.Enabled = true;
         }
 
         private void SetButtonStatesOnLoad(bool enabled)
