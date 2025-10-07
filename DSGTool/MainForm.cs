@@ -31,7 +31,7 @@ namespace DSGTool
         private readonly BlockingCollection<string> _logFileQueue = new();
         private string _logFolder = "";
         private string _logFile = "DSGClient_log.txt";
-        
+
         private ClientLoader loader;
 
         public MainForm()
@@ -173,7 +173,7 @@ namespace DSGTool
             }
             if (_stats.TryGetValue(gatewayName, out var stats) && _cards.TryGetValue(gatewayName, out var card))
             {
-                stats.SetMessageCountDB(messageId, messageCount);                
+                stats.SetMessageCountDB(messageId, messageCount);
                 card.UpdateMessageTypeCountDB(messageId, messageCount);
             }
         }
@@ -223,8 +223,8 @@ namespace DSGTool
             }
         }
 
-        private async void btnStop_Click(object sender, EventArgs e) 
-        { 
+        private async void btnStop_Click(object sender, EventArgs e)
+        {
             await StopAllAsync();
             SetButtonStatesOnConnect(false);
         }
@@ -280,7 +280,7 @@ namespace DSGTool
                 txtLog.AppendText(sb.ToString());
                 txtLog.ScrollToCaret();
             }
-        }        
+        }
 
         private void StartLogFileWriterTask()
         {
@@ -407,6 +407,7 @@ namespace DSGTool
             {
                 BuildCards();
                 SetButtonStatesOnConnect(false);
+                btnDelete.Enabled = true;
             }
             else
                 btnLoadClients.Enabled = true;
@@ -419,6 +420,7 @@ namespace DSGTool
             btnDownload.Enabled = enabled;
             btnHeartbeat.Enabled = enabled;
             btnStop.Enabled = enabled;
+            btnDelete.Enabled = enabled;
         }
         private void SetButtonStatesOnConnect(bool enabled)
         {
@@ -426,6 +428,47 @@ namespace DSGTool
             btnDownload.Enabled = enabled;
             btnHeartbeat.Enabled = enabled;
             btnStop.Enabled = enabled;
+        }
+
+        private async void btnDelete_Click(object sender, EventArgs e)
+        {
+            if (MessageBox.Show(
+                $"Are you sure you want to delete all messages for all gateways?",
+                "Confirm Deletion",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning) != DialogResult.Yes)
+                return;
+
+            try
+            {
+                if (_cards == null || _cards.Count == 0)
+                    return;
+
+                btnDelete.Enabled = false;
+                var tasks = new List<Task>();
+
+                foreach (var card in _cards.Values)
+                {
+                    tasks.Add(card.RaiseDeleteAsync());
+                }
+
+                await Task.WhenAll(tasks);
+                MessageBox.Show($"Messages for all gateways deleted successfully.",
+                    "Delete Completed",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error during deletion: {ex.Message}",
+                    "Delete Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                btnDelete.Enabled = true;
+            }
+            finally
+            {
+                btnDelete.Enabled = true;
+            }
         }
     }
 }

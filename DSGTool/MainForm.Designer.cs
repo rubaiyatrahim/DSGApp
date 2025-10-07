@@ -27,6 +27,7 @@
             flowLayoutPanel1 = new FlowLayoutPanel();
             btnDbManager = new Button();
             btnLoadClients = new Button();
+            btnDelete = new Button();
             SuspendLayout();
             // 
             // btnDownload
@@ -94,7 +95,7 @@
             // 
             // btnDbManager
             // 
-            btnDbManager.Location = new Point(740, 12);
+            btnDbManager.Location = new Point(960, 12);
             btnDbManager.Name = "btnDbManager";
             btnDbManager.Size = new Size(104, 30);
             btnDbManager.TabIndex = 6;
@@ -111,9 +112,20 @@
             btnLoadClients.Text = "Load Clients";
             btnLoadClients.Click += btnLoadClients_Click;
             // 
+            // btnDelete
+            // 
+            btnDelete.Location = new Point(850, 12);
+            btnDelete.Name = "btnDelete";
+            btnDelete.Size = new Size(104, 30);
+            btnDelete.TabIndex = 8;
+            btnDelete.Text = "Delete";
+            btnDelete.UseVisualStyleBackColor = true;
+            btnDelete.Click += btnDelete_Click;
+            // 
             // MainForm
             // 
             ClientSize = new Size(1327, 550);
+            Controls.Add(btnDelete);
             Controls.Add(btnLoadClients);
             Controls.Add(btnDbManager);
             Controls.Add(flowLayoutPanel1);
@@ -132,5 +144,6 @@
         private FlowLayoutPanel flowLayoutPanel1;
         private Button btnDbManager;
         private Button btnLoadClients;
+        private Button btnDelete;
     }
 }

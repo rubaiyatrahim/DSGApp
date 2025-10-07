@@ -259,6 +259,18 @@ namespace DSGTool
             }
         }
 
+        // Call this when you want to notify subscribers
+        public async Task RaiseDeleteAsync()
+        {
+            if (DeleteClickedAsync != null)
+            {
+                foreach (var handler in DeleteClickedAsync.GetInvocationList().Cast<Func<string, Task>>())
+                {
+                    await handler.Invoke(GatewayName);
+                }
+            }
+        }
+
         // --- Status & totals ---
         public void UpdateStatus(bool? connected)
         {
