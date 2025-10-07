@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.InteropServices.JavaScript;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -98,9 +100,9 @@ namespace DSGTool
                 Margin = new Padding(0),
                 Padding = new Padding(0)
             };
-            pnlHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40));
-            pnlHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30));
-            pnlHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30));
+            pnlHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34));
+            pnlHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
+            pnlHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
 
             pnlHeader.Controls.Add(CreateHeaderLabel("Message Type"), 0, 0);
             pnlHeader.Controls.Add(CreateHeaderLabel("Received"), 1, 0);
@@ -117,10 +119,12 @@ namespace DSGTool
                 Margin = new Padding(0),
                 Padding = new Padding(0)
             };
-            tblMessageCounts.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40));
-            tblMessageCounts.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30));
-            tblMessageCounts.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30));
+            tblMessageCounts.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34));
+            tblMessageCounts.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
+            tblMessageCounts.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
             tblMessageCounts.EnableDoubleBuffering(true);
+
+            AddRowInTable("0", 0, 0);
 
             pnlTableContainer = new Panel
             {
@@ -172,6 +176,21 @@ namespace DSGTool
             layout.Controls.Add(buttonPanel, 0, 5);
 
             Controls.Add(layout);
+        }
+
+        private void AddRowInTable(string msgType, int receivedCount, double dbCount)
+        {
+            int newRowIndex = tblMessageCounts.RowCount;
+            tblMessageCounts.RowCount++;
+            tblMessageCounts.RowStyles.Add(new RowStyle(SizeType.Absolute, 25));
+            var lblType = CreateCellLabel(msgType);
+            var lblRecv = CreateCellLabel(receivedCount.ToString());
+            var lblDb = CreateCellLabel(dbCount.ToString());
+            if (msgType != "0")
+                HighlightMismatch(lblRecv, lblDb);
+            tblMessageCounts.Controls.Add(lblType, 0, newRowIndex);
+            tblMessageCounts.Controls.Add(lblRecv, 1, newRowIndex);
+            tblMessageCounts.Controls.Add(lblDb, 2, newRowIndex);
         }
 
         // --- Create header & data cells ---
@@ -297,20 +316,7 @@ namespace DSGTool
                 }
 
                 // Add new row
-                int newRow = tblMessageCounts.RowCount;
-                tblMessageCounts.RowCount++;
-                tblMessageCounts.RowStyles.Add(new RowStyle(SizeType.Absolute, 25));
-
-                var lblType = CreateCellLabel(msgType);
-                var lblRecv = CreateCellLabel(receivedCount?.ToString() ?? "0");
-                var lblDb = CreateCellLabel(dbCount?.ToString() ?? "0");
-
-                if (msgType != "0")
-                    HighlightMismatch(lblRecv, lblDb);
-
-                tblMessageCounts.Controls.Add(lblType, 0, newRow);
-                tblMessageCounts.Controls.Add(lblRecv, 1, newRow);
-                tblMessageCounts.Controls.Add(lblDb, 2, newRow);
+                AddRowInTable(msgType, receivedCount ?? 0, dbCount ?? 0);
             }
             finally
             {
