@@ -87,9 +87,9 @@
             // 
             // flowLayoutPanel1
             // 
-            flowLayoutPanel1.Location = new Point(14, 55);
+            flowLayoutPanel1.Location = new Point(3, 55);
             flowLayoutPanel1.Name = "flowLayoutPanel1";
-            flowLayoutPanel1.Size = new Size(1301, 287);
+            flowLayoutPanel1.Size = new Size(1312, 287);
             flowLayoutPanel1.TabIndex = 6;
             // 
             // btnDbManager

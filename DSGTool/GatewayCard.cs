@@ -1,5 +1,7 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace DSGTool
@@ -10,8 +12,9 @@ namespace DSGTool
         private Label lblStatus;
         private Label lblTotal;
         private Label lblTotalExceptHB;
-        private FlowLayoutPanel pnlMessageTypes;
-        private FlowLayoutPanel pnlMessageTypesDB;
+        private TableLayoutPanel tblMessageCounts;
+        private TableLayoutPanel pnlHeader;
+        private Panel pnlTableContainer;
         private Button btnStart;
         private Button btnDownload;
         private Button btnStop;
@@ -19,7 +22,6 @@ namespace DSGTool
 
         public string GatewayName { get; private set; }
 
-        // Events for MainForm to subscribe
         public event Action<string>? StartClicked;
         public event Action<string>? DownloadClicked;
         public event Action<string>? StopClicked;
@@ -33,79 +35,108 @@ namespace DSGTool
 
         private void BuildUI()
         {
-            this.BackColor = Color.White;
-            this.BorderStyle = BorderStyle.FixedSingle;
-            this.Padding = new Padding(10);
-            this.Margin = new Padding(10);
-            this.Width = 260;
-            this.Height = 240;
+            BackColor = Color.White;
+            BorderStyle = BorderStyle.FixedSingle;
+            Padding = new Padding(10);
+            Margin = new Padding(10);
+            Width = 360;
+            Height = 260;
 
-            // Main Layout
-            var layout = new TableLayoutPanel()
+            var layout = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
-                RowCount = 8,
-                AutoSize = true
+                RowCount = 6,
+                AutoSize = false
             };
+
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Title
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Status
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Total
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Total except HB
-            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); // Message types (expandable)
-            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); // Message types DB (expandable))
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); // Table container
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Buttons
-            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Delete Button
 
-            lblTitle = new Label()
+            // --- Labels ---
+            lblTitle = new Label
             {
                 Text = GatewayName,
                 Font = new Font("Segoe UI", 12, FontStyle.Bold),
                 AutoSize = true,
-                ForeColor = Color.Black,
-                Dock = DockStyle.Fill
+                ForeColor = Color.Black
             };
 
-            lblStatus = new Label()
+            lblStatus = new Label
             {
                 Text = "Disconnected",
                 ForeColor = Color.Red,
                 AutoSize = true,
-                Font = new Font("Segoe UI", 10, FontStyle.Regular),
-                Dock = DockStyle.Fill
+                Font = new Font("Segoe UI", 10)
             };
 
-            lblTotal = new Label()
+            lblTotal = new Label
             {
                 Text = "Total: 0",
                 AutoSize = true,
-                Font = new Font("Segoe UI", 10, FontStyle.Italic),
-                Dock = DockStyle.Fill
+                Font = new Font("Segoe UI", 10, FontStyle.Italic)
             };
 
-            lblTotalExceptHB = new Label()
+            lblTotalExceptHB = new Label
             {
-                Text = "Total (excl. HB): 0",
+                Text = "Total except HB: 0",
                 AutoSize = true,
-                Font = new Font("Segoe UI", 10, FontStyle.Italic),
-                Dock = DockStyle.Fill
+                Font = new Font("Segoe UI", 10, FontStyle.Italic)
             };
 
-            pnlMessageTypes = new FlowLayoutPanel()
+            // --- Header Table (sticky) ---
+            pnlHeader = new TableLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                ColumnCount = 3,
+                Height = 30,
+                CellBorderStyle = TableLayoutPanelCellBorderStyle.Single,
+                Margin = new Padding(0),
+                Padding = new Padding(0)
+            };
+            pnlHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40));
+            pnlHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30));
+            pnlHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30));
+
+            pnlHeader.Controls.Add(CreateHeaderLabel("Message Type"), 0, 0);
+            pnlHeader.Controls.Add(CreateHeaderLabel("Received"), 1, 0);
+            pnlHeader.Controls.Add(CreateHeaderLabel("DB Count"), 2, 0);
+
+            // --- Scrollable data table ---
+            tblMessageCounts = new TableLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                ColumnCount = 3,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                CellBorderStyle = TableLayoutPanelCellBorderStyle.Single,
+                Margin = new Padding(0),
+                Padding = new Padding(0)
+            };
+            tblMessageCounts.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40));
+            tblMessageCounts.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30));
+            tblMessageCounts.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30));
+            tblMessageCounts.EnableDoubleBuffering(true);
+
+            pnlTableContainer = new Panel
             {
                 Dock = DockStyle.Fill,
                 AutoScroll = true,
-                WrapContents = true
+                //BorderStyle = BorderStyle.FixedSingle
             };
+            pnlTableContainer.Controls.Add(tblMessageCounts);
+            pnlTableContainer.EnableDoubleBuffering(true);
 
-            pnlMessageTypesDB = new FlowLayoutPanel()
-            {
-                Dock = DockStyle.Fill,
-                AutoScroll = true,
-                WrapContents = true
-            };
+            // --- Combine header + scrollable data ---
+            var pnlFullTable = new Panel { Dock = DockStyle.Fill };
+            pnlFullTable.Controls.Add(pnlTableContainer);
+            pnlFullTable.Controls.Add(pnlHeader); // sticky header
 
-            // Buttons Row
+            // --- Buttons ---
             var buttonPanel = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
@@ -121,53 +152,66 @@ namespace DSGTool
             btnDownload.Click += (s, e) => DownloadClicked?.Invoke(GatewayName);
             btnStop.Click += (s, e) => StopClicked?.Invoke(GatewayName);
 
-            buttonPanel.Controls.Add(btnStart);
-            buttonPanel.Controls.Add(btnDownload);
-            buttonPanel.Controls.Add(btnStop);
-
             btnDelete = new Button
             {
-                Text = "Delete Messages",
-                Width = 180,
+                Text = "Delete",
+                Width = 70,
                 BackColor = Color.FromArgb(255, 240, 240),
                 ForeColor = Color.DarkRed
             };
             btnDelete.Click += async (s, e) => await HandleDeleteClickAsync();
 
-            var deletePanel = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.LeftToRight,
-                Height = 35,
-                WrapContents = true
-            };
-            deletePanel.Controls.Add(btnDelete);
+            buttonPanel.Controls.AddRange(new Control[] { btnStart, btnDownload, btnStop, btnDelete });
 
-            // Add everything to layout
+            // --- Add controls to main layout ---
             layout.Controls.Add(lblTitle, 0, 0);
             layout.Controls.Add(lblStatus, 0, 1);
             layout.Controls.Add(lblTotal, 0, 2);
             layout.Controls.Add(lblTotalExceptHB, 0, 3);
-            layout.Controls.Add(pnlMessageTypes, 0, 4);
-            layout.Controls.Add(pnlMessageTypesDB, 0, 5);
-            layout.Controls.Add(buttonPanel, 0, 6);
-            layout.Controls.Add(deletePanel, 0, 7);
+            layout.Controls.Add(pnlFullTable, 0, 4);
+            layout.Controls.Add(buttonPanel, 0, 5);
 
-            this.Controls.Add(layout);
+            Controls.Add(layout);
         }
 
+        // --- Create header & data cells ---
+        private Label CreateHeaderLabel(string text) =>
+            new Label
+            {
+                Text = text,
+                Font = new Font("Segoe UI", 9, FontStyle.Bold),
+                AutoSize = false,
+                Height = 30,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleCenter,
+                BackColor = Color.Gainsboro,
+                Margin = new Padding(0),
+                Padding = new Padding(0)
+            };
+
+        private Label CreateCellLabel(string text) =>
+            new Label
+            {
+                Text = text,
+                Font = new Font("Segoe UI", 9),
+                AutoSize = false,
+                Height = 25,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Margin = new Padding(0),
+                Padding = new Padding(0)
+            };
+
+        // --- Delete handling ---
         private async Task HandleDeleteClickAsync()
         {
-            if (DeleteClickedAsync == null)
-                return;
+            if (DeleteClickedAsync == null) return;
 
-            var confirm = MessageBox.Show(
-                $"Are you sure you want to delete all messages for gateway '{GatewayName}'?",
+            if (MessageBox.Show(
+                $"Are you sure you want to delete all messages for '{GatewayName}'?",
                 "Confirm Deletion",
                 MessageBoxButtons.YesNo,
-                MessageBoxIcon.Warning);
-
-            if (confirm != DialogResult.Yes)
+                MessageBoxIcon.Warning) != DialogResult.Yes)
                 return;
 
             btnDelete.Enabled = false;
@@ -194,9 +238,11 @@ namespace DSGTool
                 btnDelete.ForeColor = Color.DarkRed;
             }
         }
+
+        // --- Status & totals ---
         public void UpdateStatus(bool? connected)
         {
-            if (connected.Value)
+            if (connected == true)
             {
                 lblStatus.Text = "Connected";
                 lblStatus.ForeColor = Color.Green;
@@ -214,67 +260,75 @@ namespace DSGTool
             }
         }
 
-        public void UpdateTotalCount(int total)
-        {
+        public void UpdateTotalCount(int total) =>
             lblTotal.Text = $"Total: {total}";
-        }
 
-        public void UpdateTotalExceptHBCount(int totalExceptHB)
-        {
+        public void UpdateTotalExceptHBCount(int totalExceptHB) =>
             lblTotalExceptHB.Text = $"Total except HB: {totalExceptHB}";
+
+        // --- Update table rows ---
+        public void UpdateMessageTypeCount(string msgType, int count) =>
+            UpdateOrCreateRow(msgType, receivedCount: count);
+
+        public void UpdateMessageTypeCountDB(string msgType, long count) =>
+            UpdateOrCreateRow(msgType, dbCount: count);
+
+        private void UpdateOrCreateRow(string msgType, int? receivedCount = null, long? dbCount = null)
+        {
+            tblMessageCounts.SuspendLayout();
+
+            try
+            {
+                for (int row = 0; row < tblMessageCounts.RowCount; row++)
+                {
+                    var typeLabel = tblMessageCounts.GetControlFromPosition(0, row) as Label;
+                    if (typeLabel != null && typeLabel.Text == msgType)
+                    {
+                        var recvLabel = tblMessageCounts.GetControlFromPosition(1, row) as Label;
+                        var dbLabel = tblMessageCounts.GetControlFromPosition(2, row) as Label;
+
+                        if (receivedCount.HasValue) recvLabel!.Text = receivedCount.Value.ToString();
+                        if (dbCount.HasValue) dbLabel!.Text = dbCount.Value.ToString();
+
+                        if (msgType != "0")
+                            HighlightMismatch(recvLabel, dbLabel);
+                        return;
+                    }
+                }
+
+                // Add new row
+                int newRow = tblMessageCounts.RowCount;
+                tblMessageCounts.RowCount++;
+                tblMessageCounts.RowStyles.Add(new RowStyle(SizeType.Absolute, 25));
+
+                var lblType = CreateCellLabel(msgType);
+                var lblRecv = CreateCellLabel(receivedCount?.ToString() ?? "0");
+                var lblDb = CreateCellLabel(dbCount?.ToString() ?? "0");
+
+                if (msgType != "0")
+                    HighlightMismatch(lblRecv, lblDb);
+
+                tblMessageCounts.Controls.Add(lblType, 0, newRow);
+                tblMessageCounts.Controls.Add(lblRecv, 1, newRow);
+                tblMessageCounts.Controls.Add(lblDb, 2, newRow);
+            }
+            finally
+            {
+                tblMessageCounts.ResumeLayout();
+                tblMessageCounts.Invalidate();
+                tblMessageCounts.Update();
+            }
         }
 
-        public void UpdateMessageTypeCount(string msgType, int count)
+        private void HighlightMismatch(Label recvLabel, Label dbLabel)
         {
-            // Find label if exists, otherwise create one
-            var existing = pnlMessageTypes.Controls
-                .OfType<Label>()
-                .FirstOrDefault(l => l.Tag?.ToString() == msgType);
-
-            if (existing != null)
+            if (int.TryParse(recvLabel.Text, out int r) && long.TryParse(dbLabel.Text, out long d) && r != d)
             {
-                existing.Text = $"{msgType}: {count}";
+                dbLabel.ForeColor = Color.Red;
             }
             else
             {
-                var lbl = new Label()
-                {
-                    Text = $"{msgType}: {count}",
-                    AutoSize = true,
-                    Tag = msgType
-                };
-                pnlMessageTypes.Controls.Add(lbl);
-            }
-        }
-        public void SetDbLabelColor(string msgType, Color color)
-        {
-            var existing = pnlMessageTypesDB.Controls
-                .OfType<Label>()
-                .FirstOrDefault(l => l.Tag?.ToString() == msgType);
-            if (existing != null)
-            {
-                existing.ForeColor = color;
-            }
-        }
-        public void UpdateMessageTypeCountDB(string msgType, long count)
-        {
-            // Find label if exists, otherwise create one
-            var existing = pnlMessageTypesDB.Controls
-                .OfType<Label>()
-                .FirstOrDefault(l => l.Tag?.ToString() == msgType);
-            if (existing != null)
-            {
-                existing.Text = $"{msgType} (DB): {count}";
-            }
-            else
-            {
-                var lbl = new Label()
-                {
-                    Text = $"{msgType} (DB): {count}",
-                    AutoSize = true,
-                    Tag = msgType
-                };
-                pnlMessageTypesDB.Controls.Add(lbl);
+                dbLabel.ForeColor = Color.Green;
             }
         }
 
@@ -282,8 +336,20 @@ namespace DSGTool
         {
             lblTotal.Text = "Total: 0";
             lblTotalExceptHB.Text = "Total except HB: 0";
-            pnlMessageTypes.Controls.Clear();
-            pnlMessageTypesDB.Controls.Clear();
+
+            tblMessageCounts.Controls.Clear();
+            tblMessageCounts.RowCount = 0;
+        }
+    }
+
+    // --- Extensions ---
+    public static class ControlExtensions
+    {
+        public static void EnableDoubleBuffering(this Control c, bool enable)
+        {
+            var prop = c.GetType().GetProperty("DoubleBuffered", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            if (prop != null)
+                prop.SetValue(c, enable, null);
         }
     }
 }

@@ -175,7 +175,6 @@ namespace DSGTool
             {
                 stats.SetMessageCountDB(messageId, messageCount);                
                 card.UpdateMessageTypeCountDB(messageId, messageCount);
-                card.SetDbLabelColor(messageId, messageCount != stats.GetCount(messageId) ? Color.Red : Color.Green);
             }
         }
 
