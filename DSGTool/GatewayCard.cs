@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.InteropServices.JavaScript;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -121,6 +123,19 @@ namespace DSGTool
             tblMessageCounts.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30));
             tblMessageCounts.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30));
             tblMessageCounts.EnableDoubleBuffering(true);
+            // Add new row
+            int newRow = tblMessageCounts.RowCount;
+            tblMessageCounts.RowCount++;
+            tblMessageCounts.RowStyles.Add(new RowStyle(SizeType.Absolute, 25));
+
+            var lblType = CreateCellLabel("0");
+            var lblRecv = CreateCellLabel("0");
+            var lblDb = CreateCellLabel("0");
+
+            tblMessageCounts.Controls.Add(lblType, 0, newRow);
+            tblMessageCounts.Controls.Add(lblRecv, 1, newRow);
+            tblMessageCounts.Controls.Add(lblDb, 2, newRow);
+
 
             pnlTableContainer = new Panel
             {
