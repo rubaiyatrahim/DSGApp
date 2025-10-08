@@ -1,6 +1,7 @@
 ﻿using System.Net.Sockets;
 using System.Reflection;
 using System.Text;
+using DBManager.Xml;
 
 namespace DSGClient
 {
@@ -263,8 +264,8 @@ namespace DSGClient
             }
         }
 
-        private static readonly XmlToSqlLoader _db = new XmlToSqlLoader("Server=192.168.102.15;Database=DSGData;User Id=rubaiyat;Password=12345;TrustServerCertificate=True;");
-        public static XmlToSqlLoader Loader => _db; // Singleton
+        private static readonly XmlMessageLoader _db = new XmlMessageLoader("Server=192.168.102.15;Database=DSGData;User Id=rubaiyat;Password=12345;TrustServerCertificate=True;");
+        public static XmlMessageLoader Loader => _db; // Singleton
 
         private async Task SendAsync(byte[] payload)
         {

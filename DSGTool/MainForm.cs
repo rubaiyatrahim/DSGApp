@@ -72,7 +72,7 @@ namespace DSGTool
             _clientPool = loader.LoadClients();
             _clientPool.MessageReceived += OnMessageReceived;
             _clientPool.StatusChanged += OnStatusChanged;
-            DSGClient.DSGClient.Loader.MessageReceivedDB += OnMessageReceivedDB;
+            DSGClient.DSGClient.Loader.MessageInserted += OnMessageInserted;
         }
 
         private void LoadSampleDataFromCode()
@@ -164,11 +164,11 @@ namespace DSGTool
             }
         }
 
-        private void OnMessageReceivedDB(string gatewayName, string messageId, string tableName, long messageCount)
+        private void OnMessageInserted(string gatewayName, string messageId, string tableName, long messageCount)
         {
             if (InvokeRequired)
             {
-                BeginInvoke(new Action(() => OnMessageReceivedDB(gatewayName, messageId, tableName, messageCount)));
+                BeginInvoke(new Action(() => OnMessageInserted(gatewayName, messageId, tableName, messageCount)));
                 return;
             }
             if (_stats.TryGetValue(gatewayName, out var stats) && _cards.TryGetValue(gatewayName, out var card))
