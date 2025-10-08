@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DSGTool", "DSGTool\DSGTool.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DSGClient", "DSGClient\DSGClient.csproj", "{7B46E870-B6C3-417D-B046-4B065E944AAF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DBManager", "DBManager\DBManager.csproj", "{DF2DEA79-3E84-44A0-A64D-067241469A33}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DSGModels", "DSGModels\DSGModels.csproj", "{E2A5B930-9C86-46FE-9E60-9F6A8F8C48C3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +25,14 @@ Global
 		{7B46E870-B6C3-417D-B046-4B065E944AAF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7B46E870-B6C3-417D-B046-4B065E944AAF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7B46E870-B6C3-417D-B046-4B065E944AAF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DF2DEA79-3E84-44A0-A64D-067241469A33}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DF2DEA79-3E84-44A0-A64D-067241469A33}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DF2DEA79-3E84-44A0-A64D-067241469A33}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DF2DEA79-3E84-44A0-A64D-067241469A33}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E2A5B930-9C86-46FE-9E60-9F6A8F8C48C3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E2A5B930-9C86-46FE-9E60-9F6A8F8C48C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E2A5B930-9C86-46FE-9E60-9F6A8F8C48C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E2A5B930-9C86-46FE-9E60-9F6A8F8C48C3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
