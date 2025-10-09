@@ -146,21 +146,22 @@ namespace DSGTool
             }
         }
 
-        private void OnMessageReceived(string gatewayName, string msgType)
+        private void OnMessageReceived(string gatewayName, string msgType, string lastSequenceNumber)
         {
             if (InvokeRequired)
             {
-                BeginInvoke(new Action(() => OnMessageReceived(gatewayName, msgType)));
+                BeginInvoke(new Action(() => OnMessageReceived(gatewayName, msgType, lastSequenceNumber)));
                 return;
             }
 
             if (_stats.TryGetValue(gatewayName, out var stats) && _cards.TryGetValue(gatewayName, out var card))
             {
                 stats.IncrementMessageCount(msgType);
+                stats.SetLastSeqNumber(msgType, lastSequenceNumber);
 
                 card.UpdateTotalCount(stats.TotalMessages);
                 card.UpdateTotalExceptHBCount(stats.TotalMessages - stats.GetCount("0"));
-                card.UpdateMessageTypeCount(msgType, stats.GetCount(msgType));
+                card.UpdateMessageTypeCount(msgType, count: stats.GetCount(msgType), lsn: stats.GetLastSeqNumber(msgType));
             }
         }
 

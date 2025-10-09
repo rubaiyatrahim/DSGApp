@@ -24,7 +24,7 @@ namespace DSGClient
         /// </summary>
         private SemaphoreSlim _sendLock; // = new(1, 1);
 
-        public event Action<string, string>? MessageReceived;
+        public event Action<string, string, string>? MessageReceived; // gatewayName, messageId, lsn
         public event Action<string, bool> StatusChanged;
 
         public bool IsConnected => _connected;
@@ -181,7 +181,7 @@ namespace DSGClient
                         accumulator.RemoveRange(0, fullMessageLength);      // Remove the full message from accumulator
 
                         Console.WriteLine($"{GATEWAY_TAG}>> Message Id: {messageId}, Sequence Number: {sequenceNumber}");
-                        MessageReceived?.Invoke(_gateway.GatewayName, messageId.ToString());
+                        MessageReceived?.Invoke(_gateway.GatewayName, messageId.ToString(), sequenceNumber.ToString());
 
                         if (payload.Length == 0)
                         {

@@ -3,7 +3,7 @@
     public sealed class DSGClientPool : IAsyncDisposable
     {
         private readonly List<DSGClient> _clients = new();
-        public event Action<string, string>? MessageReceived; // clientId, msgType
+        public event Action<string, string, string>? MessageReceived; // clientId, msgType, lastSeqNumber
         public event Action<string, bool> StatusChanged;
 
         public DSGClientPool() { }
@@ -12,7 +12,7 @@
         {
             var client = new DSGClient(gateway, messageTypes, startingSequenceNumber, endingSequenceNumber, heartbeatSeconds);
 
-            client.MessageReceived += (clientGateName, messageType) => MessageReceived?.Invoke(clientGateName, messageType);
+            client.MessageReceived += (clientGateName, messageType, lastSeqNumber) => MessageReceived?.Invoke(clientGateName, messageType, lastSeqNumber);
             client.StatusChanged += (clientGatewayName, connected) => StatusChanged?.Invoke(clientGatewayName, connected);
 
             _clients.Add(client);

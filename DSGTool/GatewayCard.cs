@@ -94,7 +94,7 @@ namespace DSGTool
             pnlHeader = new TableLayoutPanel
             {
                 Dock = DockStyle.Top,
-                ColumnCount = 3,
+                ColumnCount = 4,
                 Height = 30,
                 CellBorderStyle = TableLayoutPanelCellBorderStyle.Single,
                 Margin = new Padding(0),
@@ -114,20 +114,21 @@ namespace DSGTool
             tblMessageCounts = new TableLayoutPanel
             {
                 Dock = DockStyle.Top,
-                ColumnCount = 3,
+                ColumnCount = 4,
                 AutoSize = true,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 CellBorderStyle = TableLayoutPanelCellBorderStyle.Single,
                 Margin = new Padding(0),
                 Padding = new Padding(0)
             };
-            tblMessageCounts.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34));
-            tblMessageCounts.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
-            tblMessageCounts.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
+            tblMessageCounts.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
+            tblMessageCounts.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
+            tblMessageCounts.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
+            tblMessageCounts.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
             tblMessageCounts.EnableDoubleBuffering(true);
 
             // Add new row
-            AddRowInTable("0", 0, 0, 0);
+            AddRowInTable("0", "0", 0, 0);
 
             pnlTableContainer = new Panel
             {
@@ -181,7 +182,7 @@ namespace DSGTool
             Controls.Add(layout);
         }
 
-        private void AddRowInTable(string msgType, long lsn, int receivedCount, long dbCount)
+        private void AddRowInTable(string msgType, string lsn, int receivedCount, long dbCount)
         {
             int newRowIndex = tblMessageCounts.RowCount;
             tblMessageCounts.RowCount++;
@@ -303,13 +304,13 @@ namespace DSGTool
             lblTotalExceptHB.Text = $"Total except HB: {totalExceptHB}";
 
         // --- Update table rows ---
-        public void UpdateMessageTypeCount(string msgType, int count) =>
-            UpdateOrCreateRow(msgType, receivedCount: count);
+        public void UpdateMessageTypeCount(string msgType, string lsn, int count) =>
+            UpdateOrCreateRow(msgType, lsn: lsn, receivedCount: count);
 
         public void UpdateMessageTypeCountDB(string msgType, long count) =>
             UpdateOrCreateRow(msgType, dbCount: count);
 
-        private void UpdateOrCreateRow(string msgType, long? lsn = null, int? receivedCount = null, long? dbCount = null)
+        private void UpdateOrCreateRow(string msgType, string? lsn = null, int? receivedCount = null, long? dbCount = null)
         {
             tblMessageCounts.SuspendLayout();
 
@@ -320,9 +321,11 @@ namespace DSGTool
                     var typeLabel = tblMessageCounts.GetControlFromPosition(0, row) as Label;
                     if (typeLabel != null && typeLabel.Text == msgType)
                     {
-                        var recvLabel = tblMessageCounts.GetControlFromPosition(1, row) as Label;
-                        var dbLabel = tblMessageCounts.GetControlFromPosition(2, row) as Label;
+                        var lsnLabel = tblMessageCounts.GetControlFromPosition(1, row) as Label;
+                        var recvLabel = tblMessageCounts.GetControlFromPosition(2, row) as Label;
+                        var dbLabel = tblMessageCounts.GetControlFromPosition(3, row) as Label;
 
+                        if (lsn != null) lsnLabel!.Text = lsn;
                         if (receivedCount.HasValue) recvLabel!.Text = receivedCount.Value.ToString();
                         if (dbCount.HasValue) dbLabel!.Text = dbCount.Value.ToString();
 
@@ -333,7 +336,7 @@ namespace DSGTool
                 }
 
                 // Add new row
-                AddRowInTable(msgType, lsn ?? 0, receivedCount ?? 0, dbCount ?? 0);
+                AddRowInTable(msgType, lsn ?? "0", receivedCount ?? 0, dbCount ?? 0);
             }
             finally
             {
@@ -363,7 +366,7 @@ namespace DSGTool
             tblMessageCounts.Controls.Clear();
             tblMessageCounts.RowCount = 0;
 
-            AddRowInTable("0", 0, 0, 0);
+            AddRowInTable("0", "0", 0, 0);
         }
     }
 
