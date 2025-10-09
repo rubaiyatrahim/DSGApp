@@ -24,5 +24,25 @@ namespace DBManager.Common
             if (parameters != null) cmd.Parameters.AddRange(parameters);
             return cmd.ExecuteNonQuery();
         }
+
+        public static SqlDataReader GetDataBySelect(string connectionString, string sql, params SqlParameter[] parameters)
+        {
+            var conn = new SqlConnection(connectionString);
+            conn.Open();
+            using var cmd = new SqlCommand(sql, conn);
+            cmd.CommandType = CommandType.Text;
+            if (parameters != null) cmd.Parameters.AddRange(parameters);
+            return cmd.ExecuteReader(CommandBehavior.CloseConnection);
+        }
+
+        public static SqlDataReader GetDataByProcedure(string connectionString, string procedureName, params SqlParameter[] parameters)
+        {
+            var conn = new SqlConnection(connectionString);
+            conn.Open();
+            using var cmd = new SqlCommand(procedureName, conn);
+            cmd.CommandType = CommandType.StoredProcedure;
+            if (parameters != null) cmd.Parameters.AddRange(parameters);
+            return cmd.ExecuteReader(CommandBehavior.CloseConnection);
+        }
     }
 }

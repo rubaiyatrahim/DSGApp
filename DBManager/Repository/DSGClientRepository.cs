@@ -14,10 +14,7 @@ namespace DBManager.Repositories
         public List<DSGClientEntity> GetAll()
         {
             var list = new List<DSGClientEntity>();
-            using var conn = new SqlConnection(_connectionString);
-            conn.Open();
-            using var cmd = new SqlCommand("SELECT * FROM DSGClient", conn);
-            using var reader = cmd.ExecuteReader();
+            using var reader = SqlHelper.GetDataBySelect(_connectionString, "SELECT * FROM DSGClient");
             while (reader.Read())
             {
                 list.Add(new DSGClientEntity(

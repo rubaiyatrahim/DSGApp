@@ -89,7 +89,7 @@ namespace DSGTool
             _clientPool.AddClient(gatewayOM, new List<MessageType> { msgType_EXP_INDEX_WATCH, msgType_EXP_STAT_UPDATE }, "1", "1000000", HEARTBEAT_INTERVAL_SECONDS);
             _clientPool.AddClient(gatewayMD, new List<MessageType> { msgType_Announcement }, "1", "1000000", HEARTBEAT_INTERVAL_SECONDS);
         }
-
+        /*
         private void AddSampleDataToDb(ClientLoader loader)
         {
             // Add gateways
@@ -109,7 +109,7 @@ namespace DSGTool
             // Add DSG clients
             loader.AddDSGClient(new DSGClientEntity(null, g1, "1", "1000000", HEARTBEAT_INTERVAL_SECONDS));
             loader.AddDSGClient(new DSGClientEntity(null, g2, "1", "1000000", HEARTBEAT_INTERVAL_SECONDS));
-        }
+        }*/
 
         private void BuildCards()
         {

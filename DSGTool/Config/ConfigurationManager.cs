@@ -1,15 +1,15 @@
 ﻿using DSGClient;
-using DSGTool.Data;
-using DSGTool.Data.Models;
+using DBManager;
 using System;
 using System.Linq;
 using System.Windows.Forms;
+using DSGModels.Models;
 
 namespace DSGTool.Config
 {
     public class ConfigurationManager : Form
     {
-        private readonly DbWorks _dbWorks;
+        private readonly DatabaseManager _dbWorks;
 
         private DataGridView dgvGateways;
         private DataGridView dgvMessageTypes;
@@ -18,7 +18,7 @@ namespace DSGTool.Config
 
         public ConfigurationManager(string connectionString)
         {
-            _dbWorks = new DbWorks(connectionString);
+            _dbWorks = new DatabaseManager(connectionString);
             Width = 1000; Height = 600;
             Text = "Configuration Manager";
 
@@ -46,7 +46,7 @@ namespace DSGTool.Config
                 HeaderText = "Gateway",
                 DisplayMember = "GatewayName",
                 ValueMember = "Id",
-                DataSource = _dbWorks.GetGateways().ToList(),
+                DataSource = _dbWorks.Gateways.GetAll(),
                 FlatStyle = FlatStyle.Flat
             };
             dgvDSGClients.Columns.Insert(gwIndex, comboCol);
@@ -59,7 +59,7 @@ namespace DSGTool.Config
                 HeaderText = "Gateway",
                 DisplayMember = "GatewayName",
                 ValueMember = "GatewayName",
-                DataSource = _dbWorks.GetGateways().Select(g => new { g.GatewayName }).ToList(),
+                DataSource = _dbWorks.Gateways.GetAll().Select(g => new { g.GatewayName }).ToList(),
                 FlatStyle = FlatStyle.Flat,
                 DisplayStyle = DataGridViewComboBoxDisplayStyle.ComboBox
             };
@@ -160,7 +160,7 @@ namespace DSGTool.Config
                             id = parsedId;
                         bool isNew = id == 0;
 
-                        var g = new Gateway(
+                        var g = new GatewayEntity(
                             isNew ? null : id,
                             row.Cells["PartitionId"].Value?.ToString() ?? string.Empty,
                             row.Cells["EnvironmentName"].Value?.ToString() ?? string.Empty,
@@ -172,9 +172,9 @@ namespace DSGTool.Config
                         );
 
                         if (isNew)
-                            g.Id = _dbWorks.InsertGateway(g); // assume Insert returns new Id
+                            g.Id = _dbWorks.Gateways.Insert(g); // assume Insert returns new Id
                         else
-                            _dbWorks.UpdateGateway(g);
+                            _dbWorks.Gateways.Update(g);
 
                         ReloadAndSelect(dgvGateways, LoadGateways, e.RowIndex);
                         LoadGatewayMessageMap();
@@ -191,7 +191,7 @@ namespace DSGTool.Config
             {
                 if (!ConfirmDelete()) { e.Cancel = true; return; }
                 if (e.Row.Cells["Id"].Value != null)
-                    _dbWorks.DeleteGateway(e.Row.Cells["Id"].Value.ToString());
+                    _dbWorks.Gateways.Delete(Convert.ToInt32(e.Row.Cells["Id"].Value));
             };
 
             // MessageTypes
@@ -210,7 +210,7 @@ namespace DSGTool.Config
                             id = parsedId;
                         bool isNew = id == 0;
 
-                        var m = new MessageType(
+                        var m = new MessageTypeEntity(
                             isNew ? null : id,
                             row.Cells["Name"].Value?.ToString() ?? string.Empty,
                             row.Cells["MessageId"].Value?.ToString() ?? string.Empty,
@@ -218,9 +218,9 @@ namespace DSGTool.Config
                         );
 
                         if (isNew)
-                            m.Id = _dbWorks.InsertMessageType(m);
+                            m.Id = _dbWorks.MessageTypes.Insert(m);
                         else
-                            _dbWorks.UpdateMessageType(m);
+                            _dbWorks.MessageTypes.Update(m);
 
                         ReloadAndSelect(dgvMessageTypes, LoadMessageTypes, e.RowIndex);
                         LoadGatewayMessageMap();
@@ -237,7 +237,7 @@ namespace DSGTool.Config
             {
                 if (!ConfirmDelete()) { e.Cancel = true; return; }
                 if (e.Row.Cells["Id"].Value != null)
-                    _dbWorks.DeleteMessageType(Convert.ToInt32(e.Row.Cells["Id"].Value));
+                    _dbWorks.MessageTypes.Delete(Convert.ToInt32(e.Row.Cells["Id"].Value));
             };
 
             // DSG Clients
@@ -269,9 +269,9 @@ namespace DSGTool.Config
                         );
 
                         if (isNew)
-                            c.Id = _dbWorks.InsertDSGClient(c);
+                            c.Id = _dbWorks.DSGClients.Insert(c);
                         else
-                            _dbWorks.UpdateDSGClient(c);
+                            _dbWorks.DSGClients.Update(c);
 
                         ReloadAndSelect(dgvDSGClients, LoadDSGClients, e.RowIndex);
                     }
@@ -287,7 +287,7 @@ namespace DSGTool.Config
             {
                 if (!ConfirmDelete()) { e.Cancel = true; return; }
                 if (e.Row.Cells["Id"].Value != null)
-                    _dbWorks.DeleteDSGClient(e.Row.Cells["Id"].Value.ToString());
+                    _dbWorks.DSGClients.Delete(Convert.ToInt32(e.Row.Cells["Id"].Value));
             };
         }
 
@@ -302,11 +302,11 @@ namespace DSGTool.Config
 
                 var row = dgv.Rows[e.RowIndex];
                 string gatewayName = row.Cells["GatewayName"].Value?.ToString();
-                var gateway = _dbWorks.GetGateways().FirstOrDefault(g => g.GatewayName == gatewayName);
+                var gateway = _dbWorks.Gateways.GetAll().FirstOrDefault(g => g.GatewayName == gatewayName);
                 if (gateway == null) return;
 
-                var allMessageTypes = _dbWorks.GetMessageTypes();
-                var currentIds = _dbWorks.GetMessageTypeIdsForGateway(gateway.Id);
+                var allMessageTypes = _dbWorks.MessageTypes.GetAll();
+                var currentIds = _dbWorks.GatewayMessageTypes.GetMessageTypeIdsForGateway(gateway.Id);
 
                 clb.Items.Clear();
                 foreach (var mt in allMessageTypes)
@@ -324,13 +324,13 @@ namespace DSGTool.Config
             {
                 if (!(clb.Tag is int gatewayId)) return;
 
-                var allMessageTypes = _dbWorks.GetMessageTypes();
+                var allMessageTypes = _dbWorks.MessageTypes.GetAll();
                 var selectedNames = clb.CheckedItems.Cast<string>().ToList();
                 var selectedIds = allMessageTypes.Where(m => selectedNames.Contains(m.Name)).Select(m => m.Id).ToList();
 
-                var existingIds = _dbWorks.GetMessageTypeIdsForGateway(gatewayId);
-                foreach (var id in existingIds) _dbWorks.DeleteGatewayMessageType(gatewayId, id);
-                foreach (var id in selectedIds) _dbWorks.InsertGatewayMessageType(gatewayId, id);
+                var existingIds = _dbWorks.GatewayMessageTypes.GetMessageTypeIdsForGateway(gatewayId);
+                foreach (var id in existingIds) _dbWorks.GatewayMessageTypes.Delete(gatewayId, id);
+                foreach (var id in selectedIds) _dbWorks.GatewayMessageTypes.Insert(new GatewayMessageTypeEntity(gatewayId, id));
 
                 int selectedRowIndex = dgv.CurrentCell.RowIndex;
                 LoadGatewayMessageMap();
@@ -372,7 +372,7 @@ namespace DSGTool.Config
         private void LoadGateways()
         {
             dgvGateways.Rows.Clear();
-            var gateways = _dbWorks.GetGateways().ToList();
+            var gateways = _dbWorks.Gateways.GetAll();
 
             foreach (var g in gateways)
                 dgvGateways.Rows.Add(g.Id, g.PartitionId, g.EnvironmentName, g.GatewayName, g.Host, g.Port, g.Username, g.Password);
@@ -385,7 +385,8 @@ namespace DSGTool.Config
         private void LoadMessageTypes()
         {
             dgvMessageTypes.Rows.Clear();
-            foreach (var m in _dbWorks.GetMessageTypes())
+            var messageTypes = _dbWorks.MessageTypes.GetAll();
+            foreach (var m in messageTypes)
                 dgvMessageTypes.Rows.Add(m.Id, m.Name, m.MessageId, m.IsSecMsg);
             dgvMessageTypes.Columns[0].Visible = false;
         }
@@ -393,7 +394,7 @@ namespace DSGTool.Config
         private void LoadDSGClients()
         {
             dgvDSGClients.Rows.Clear();
-            foreach (var c in _dbWorks.GetDSGClientEntities())
+            foreach (var c in _dbWorks.DSGClients.GetAll())
                 dgvDSGClients.Rows.Add(c.Id, c.GatewayId, c.StartingSequenceNumber, c.EndingSequenceNumber, c.HeartbeatIntervalSeconds);
             dgvDSGClients.Columns[0].Visible = false;
         }
@@ -401,12 +402,12 @@ namespace DSGTool.Config
         private void LoadGatewayMessageMap()
         {
             dgvGatewayMessageMap.Rows.Clear();
-            var gateways = _dbWorks.GetGateways();
-            var messageTypes = _dbWorks.GetMessageTypes();
+            var gateways = _dbWorks.Gateways.GetAll();
+            var messageTypes = _dbWorks.MessageTypes.GetAll();
 
             foreach (var g in gateways)
             {
-                var msgIds = _dbWorks.GetMessageTypeIdsForGateway(g.Id);
+                var msgIds = _dbWorks.GatewayMessageTypes.GetMessageTypeIdsForGateway(g.Id);
                 var names = msgIds.Select(id => messageTypes.FirstOrDefault(m => m.Id == id)?.Name)
                                   .Where(n => n != null)
                                   .ToList();

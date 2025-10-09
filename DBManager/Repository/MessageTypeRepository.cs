@@ -15,10 +15,7 @@ namespace DBManager.Repositories
         public List<MessageTypeEntity> GetAll()
         {
             var list = new List<MessageTypeEntity>();
-            using var conn = new SqlConnection(_connectionString);
-            conn.Open();
-            using var cmd = new SqlCommand("SELECT * FROM MessageType", conn);
-            using var reader = cmd.ExecuteReader();
+            using var reader = SqlHelper.GetDataBySelect(_connectionString, "SELECT * FROM MessageType");
 
             while (reader.Read())
             {

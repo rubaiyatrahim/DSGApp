@@ -13,11 +13,7 @@ namespace DBManager.Repositories
         public List<GatewayEntity> GetAll()
         {
             var gateways = new List<GatewayEntity>();
-            using var conn = new SqlConnection(_connectionString);
-            conn.Open();
-
-            using var cmd = new SqlCommand("SELECT * FROM Gateway", conn);
-            using var reader = cmd.ExecuteReader();
+            using var reader = SqlHelper.GetDataBySelect(_connectionString, "SELECT * FROM Gateway");
             while (reader.Read())
             {
                 gateways.Add(new GatewayEntity(
