@@ -11,8 +11,11 @@ namespace DSGTool
     public class GatewayCard : UserControl
     {
         private Label lblTitle;
+        private Label lblEnvironment;
         private Label lblStatus;
+        private Label lblHost;
         private Label lblTotal;
+        private Label lblRange;
         private Label lblTotalExceptHB;
         private TableLayoutPanel tblMessageCounts;
         private TableLayoutPanel pnlHeader;
@@ -35,6 +38,13 @@ namespace DSGTool
             BuildUI();
         }
 
+        public void SetEnvironmentLabels(string environment, string hostip, string port, string startingSeqNumber, string endingSeqNumber)
+        {
+            lblEnvironment.Text = environment;
+            lblHost.Text = "@ " + hostip + " : " + port;
+            lblRange.Text = "Requested SN: " + startingSeqNumber + ".." + endingSeqNumber;
+        }
+
         private void BuildUI()
         {
             BackColor = Color.White;
@@ -42,7 +52,7 @@ namespace DSGTool
             Padding = new Padding(10);
             Margin = new Padding(10);
             Width = 360;
-            Height = 260;
+            Height = 280;
 
             var layout = new TableLayoutPanel
             {
@@ -65,23 +75,68 @@ namespace DSGTool
                 Text = GatewayName,
                 Font = new Font("Segoe UI", 12, FontStyle.Bold),
                 AutoSize = true,
-                ForeColor = Color.Black
+                ForeColor = Color.Black,
+                Dock = DockStyle.Left,
+                TextAlign = ContentAlignment.MiddleLeft
             };
+
+            lblEnvironment = new Label
+            {
+                Text = "<Environment>",
+                ForeColor = Color.Black,
+                AutoSize = true,
+                Font = new Font("Segoe UI", 10),
+                Dock = DockStyle.Right,
+                TextAlign = ContentAlignment.BottomRight
+            };
+
+            var panTitle = new Panel { Width = 330, Height = 20 };
+            panTitle.Controls.Add(lblTitle);
+            panTitle.Controls.Add(lblEnvironment);
 
             lblStatus = new Label
             {
                 Text = "Disconnected",
                 ForeColor = Color.Red,
                 AutoSize = true,
-                Font = new Font("Segoe UI", 10)
+                Font = new Font("Segoe UI", 10),
+                Dock = DockStyle.Left,
+                TextAlign = ContentAlignment.MiddleLeft
             };
+            lblHost = new Label
+            {
+                Text = "<Host>",
+                ForeColor = Color.Gray,
+                AutoSize = true,
+                Font = new Font("Segoe UI", 8),
+                Dock = DockStyle.Right,
+                TextAlign = ContentAlignment.BottomRight
+            };
+
+            var panStatus = new Panel { Width = 330, Height = 15 };
+            panStatus.Controls.Add(lblStatus);
+            panStatus.Controls.Add(lblHost);
 
             lblTotal = new Label
             {
                 Text = "Total: 0",
                 AutoSize = true,
-                Font = new Font("Segoe UI", 10, FontStyle.Italic)
+                Font = new Font("Segoe UI", 10, FontStyle.Italic),
+                Dock = DockStyle.Left,
+                TextAlign = ContentAlignment.MiddleLeft
             };
+            lblRange = new Label
+            {
+                Text = "<Range>",
+                ForeColor = Color.Gray,
+                AutoSize = true,
+                Font = new Font("Segoe UI", 8),
+                Dock = DockStyle.Right,
+                TextAlign = ContentAlignment.BottomRight
+            };
+            var panRange = new Panel { Width = 330, Height = 15 };
+            panRange.Controls.Add(lblTotal);
+            panRange.Controls.Add(lblRange);
 
             lblTotalExceptHB = new Label
             {
@@ -89,6 +144,8 @@ namespace DSGTool
                 AutoSize = true,
                 Font = new Font("Segoe UI", 10, FontStyle.Italic)
             };
+            var panCountExceptHB = new Panel { Width = 330, Height = 25 };
+            panCountExceptHB.Controls.Add(lblTotalExceptHB);
 
             // --- Header Table (sticky) ---
             pnlHeader = new TableLayoutPanel
@@ -171,11 +228,11 @@ namespace DSGTool
 
             buttonPanel.Controls.AddRange(new Control[] { btnStart, btnDownload, btnStop, btnDelete });
 
-            // --- Add controls to main layout ---
-            layout.Controls.Add(lblTitle, 0, 0);
-            layout.Controls.Add(lblStatus, 0, 1);
-            layout.Controls.Add(lblTotal, 0, 2);
-            layout.Controls.Add(lblTotalExceptHB, 0, 3);
+            // --- Add panels of controls to main layout ---
+            layout.Controls.Add(panTitle, 0, 0);
+            layout.Controls.Add(panStatus, 0, 1);
+            layout.Controls.Add(panRange, 0, 2);
+            layout.Controls.Add(panCountExceptHB, 0, 3);
             layout.Controls.Add(pnlFullTable, 0, 4);
             layout.Controls.Add(buttonPanel, 0, 5);
 

@@ -29,6 +29,11 @@ namespace DSGClient
 
         public bool IsConnected => _connected;
         public string GatewayName => _gateway.GatewayName;
+        public string EnvironmentName => _gateway.EnvironmentName;
+        public string Host => _gateway.Host;
+        public string Port => _gateway.Port.ToString();
+        public string StartingSequenceNumber => _startingSequenceNumber;
+        public string EndingSequenceNumber => _endingSequenceNumber;
         private string GATEWAY_TAG => "[" + _gateway.EnvironmentName + ":" + _gateway.GatewayName + "] ";
 
         private const int LENGTH_OUTERHEADER = 14;  // Length of outer header

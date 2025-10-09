@@ -69,11 +69,11 @@
             // txtLog
             // 
             txtLog.Font = new Font("Consolas", 9F);
-            txtLog.Location = new Point(12, 355);
+            txtLog.Location = new Point(12, 372);
             txtLog.Name = "txtLog";
             txtLog.ReadOnly = true;
             txtLog.ScrollBars = RichTextBoxScrollBars.Vertical;
-            txtLog.Size = new Size(1303, 183);
+            txtLog.Size = new Size(1303, 166);
             txtLog.TabIndex = 7;
             txtLog.Text = "";
             // 
@@ -90,7 +90,7 @@
             // 
             flowLayoutPanel1.Location = new Point(3, 55);
             flowLayoutPanel1.Name = "flowLayoutPanel1";
-            flowLayoutPanel1.Size = new Size(1312, 287);
+            flowLayoutPanel1.Size = new Size(1312, 311);
             flowLayoutPanel1.TabIndex = 6;
             // 
             // btnDbManager

@@ -124,7 +124,7 @@ namespace DSGTool
                 _stats[gatewayName] = stats;
 
                 var card = new GatewayCard(gatewayName);
-
+                card.SetEnvironmentLabels(client.EnvironmentName, client.Host, client.Port, client.StartingSequenceNumber, client.EndingSequenceNumber);
                 card.StartClicked += async gw => await client.StartAsync(_cts.Token);
                 card.DownloadClicked += async gw => await client.DownloadAsync();
                 card.StopClicked += async gw => await client.StopAsync();
