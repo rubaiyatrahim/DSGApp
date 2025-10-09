@@ -52,22 +52,22 @@ namespace DSGTool
             Padding = new Padding(10);
             Margin = new Padding(10);
             Width = 360;
-            Height = 280;
+            AutoSize = true;
 
             var layout = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
                 RowCount = 6,
-                AutoSize = false
+                AutoSize = true
             };
 
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Title
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Status
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Total
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Total except HB
-            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); // Table container
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Buttons
+            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Table container
 
             // --- Labels ---
             lblTitle = new Label
@@ -189,15 +189,15 @@ namespace DSGTool
 
             pnlTableContainer = new Panel
             {
-                Dock = DockStyle.Fill,
-                AutoScroll = true,
+                Dock = DockStyle.Top,
+                AutoSize = true,
                 //BorderStyle = BorderStyle.FixedSingle
             };
             pnlTableContainer.Controls.Add(tblMessageCounts);
             pnlTableContainer.EnableDoubleBuffering(true);
 
             // --- Combine header + scrollable data ---
-            var pnlFullTable = new Panel { Dock = DockStyle.Fill };
+            var pnlFullTable = new Panel { Dock = DockStyle.Top, AutoSize = true };
             pnlFullTable.Controls.Add(pnlTableContainer);
             pnlFullTable.Controls.Add(pnlHeader); // sticky header
 
@@ -233,8 +233,8 @@ namespace DSGTool
             layout.Controls.Add(panStatus, 0, 1);
             layout.Controls.Add(panRange, 0, 2);
             layout.Controls.Add(panCountExceptHB, 0, 3);
-            layout.Controls.Add(pnlFullTable, 0, 4);
-            layout.Controls.Add(buttonPanel, 0, 5);
+            layout.Controls.Add(buttonPanel, 0, 4);
+            layout.Controls.Add(pnlFullTable, 0, 5);
 
             Controls.Add(layout);
         }
