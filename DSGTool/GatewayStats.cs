@@ -10,6 +10,7 @@ namespace DSGTool
     {
         private readonly Dictionary<string, int> _messageCounts = new();
         private readonly Dictionary<string, long> _messageCountsDB = new();
+        private readonly Dictionary<string, long> _lastSeqNumbers = new();
 
         public string GatewayName { get; }
         public int TotalMessages { get; private set; }
@@ -41,14 +42,23 @@ namespace DSGTool
             _messageCountsDB[messageId] = messageCount;
         }
 
+        public void SetLastSeqNumber(string messageId, long seqNumber)
+        {
+            _lastSeqNumbers[messageId] = seqNumber;
+        }
+
         public int GetCount(string msgType)
             => _messageCounts.TryGetValue(msgType, out int count) ? count : 0;
 
         public long GetCountDB(string msgType)
             => _messageCountsDB.TryGetValue(msgType, out long count) ? count : 0;
 
+        public long GetLastSeqNumber(string messageId)
+            => _lastSeqNumbers.TryGetValue(messageId, out long seqNumber) ? seqNumber : 0;
+
         public IReadOnlyDictionary<string, int> GetAllCounts() => _messageCounts;
         public IReadOnlyDictionary<string, long> GetAllCountsDB() => _messageCountsDB;
+        public IReadOnlyDictionary<string, long> GetAllLastSeqNumbers() => _lastSeqNumbers;
     }
 
 }
