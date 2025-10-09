@@ -100,13 +100,15 @@ namespace DSGTool
                 Margin = new Padding(0),
                 Padding = new Padding(0)
             };
-            pnlHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34));
-            pnlHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
-            pnlHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
+            pnlHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
+            pnlHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
+            pnlHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
+            pnlHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
 
-            pnlHeader.Controls.Add(CreateHeaderLabel("Message Type"), 0, 0);
-            pnlHeader.Controls.Add(CreateHeaderLabel("Received"), 1, 0);
-            pnlHeader.Controls.Add(CreateHeaderLabel("DB Count"), 2, 0);
+            pnlHeader.Controls.Add(CreateHeaderLabel("Message Id"), 0, 0);
+            pnlHeader.Controls.Add(CreateHeaderLabel("LSN"), 1, 0);
+            pnlHeader.Controls.Add(CreateHeaderLabel("Received"), 2, 0);
+            pnlHeader.Controls.Add(CreateHeaderLabel("DB Count"), 3, 0);
 
             // --- Scrollable data table ---
             tblMessageCounts = new TableLayoutPanel
@@ -125,7 +127,7 @@ namespace DSGTool
             tblMessageCounts.EnableDoubleBuffering(true);
 
             // Add new row
-            AddRowInTable("0", 0, 0);
+            AddRowInTable("0", 0, 0, 0);
 
             pnlTableContainer = new Panel
             {
@@ -179,19 +181,21 @@ namespace DSGTool
             Controls.Add(layout);
         }
 
-        private void AddRowInTable(string msgType, int receivedCount, double dbCount)
+        private void AddRowInTable(string msgType, long lsn, int receivedCount, long dbCount)
         {
             int newRowIndex = tblMessageCounts.RowCount;
             tblMessageCounts.RowCount++;
             tblMessageCounts.RowStyles.Add(new RowStyle(SizeType.Absolute, 25));
             var lblType = CreateCellLabel(msgType);
+            var lblLsn = CreateCellLabel(lsn.ToString());
             var lblRecv = CreateCellLabel(receivedCount.ToString());
             var lblDb = CreateCellLabel(dbCount.ToString());
             if (msgType != "0")
                 HighlightMismatch(lblRecv, lblDb);
             tblMessageCounts.Controls.Add(lblType, 0, newRowIndex);
-            tblMessageCounts.Controls.Add(lblRecv, 1, newRowIndex);
-            tblMessageCounts.Controls.Add(lblDb, 2, newRowIndex);
+            tblMessageCounts.Controls.Add(lblLsn, 1, newRowIndex);
+            tblMessageCounts.Controls.Add(lblRecv, 2, newRowIndex);
+            tblMessageCounts.Controls.Add(lblDb, 3, newRowIndex);
         }
 
         // --- Create header & data cells ---
@@ -305,7 +309,7 @@ namespace DSGTool
         public void UpdateMessageTypeCountDB(string msgType, long count) =>
             UpdateOrCreateRow(msgType, dbCount: count);
 
-        private void UpdateOrCreateRow(string msgType, int? receivedCount = null, long? dbCount = null)
+        private void UpdateOrCreateRow(string msgType, long? lsn = null, int? receivedCount = null, long? dbCount = null)
         {
             tblMessageCounts.SuspendLayout();
 
@@ -329,7 +333,7 @@ namespace DSGTool
                 }
 
                 // Add new row
-                AddRowInTable(msgType, receivedCount ?? 0, dbCount ?? 0);
+                AddRowInTable(msgType, lsn ?? 0, receivedCount ?? 0, dbCount ?? 0);
             }
             finally
             {
@@ -359,7 +363,7 @@ namespace DSGTool
             tblMessageCounts.Controls.Clear();
             tblMessageCounts.RowCount = 0;
 
-            AddRowInTable("0", 0, 0);
+            AddRowInTable("0", 0, 0, 0);
         }
     }
 
