@@ -18,8 +18,10 @@ namespace DSGTool
         private Label lblRange;
         private Label lblTotalExceptHB;
         private TableLayoutPanel tblMessageCounts;
+        private TableLayoutPanel tblMessageNames;
         private TableLayoutPanel pnlHeader;
         private Panel pnlTableContainer;
+        private Panel pnlMessageNamesContainer;
         private Button btnStart;
         private Button btnDownload;
         private Button btnStop;
@@ -58,7 +60,7 @@ namespace DSGTool
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
-                RowCount = 6,
+                RowCount = 7,
                 AutoSize = true
             };
 
@@ -68,6 +70,7 @@ namespace DSGTool
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Total except HB
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Buttons
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Table container
+            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Message names container
 
             // --- Labels ---
             lblTitle = new Label
@@ -185,7 +188,7 @@ namespace DSGTool
             tblMessageCounts.EnableDoubleBuffering(true);
 
             // Add new row
-            AddRowInTable("0", "0", 0, 0);
+            AddRowInMessageCountsTable("0", "0", 0, 0);
 
             pnlTableContainer = new Panel
             {
@@ -228,6 +231,36 @@ namespace DSGTool
 
             buttonPanel.Controls.AddRange(new Control[] { btnStart, btnDownload, btnStop, btnDelete });
 
+
+            // --- Scrollable data table ---
+            tblMessageNames = new TableLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                ColumnCount = 1,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                CellBorderStyle = TableLayoutPanelCellBorderStyle.None,
+                Margin = new Padding(0),
+                Padding = new Padding(0)
+            };
+            tblMessageNames.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            tblMessageNames.EnableDoubleBuffering(true);
+
+            // Add new row
+            AddRowInMessageNamesTable("0", "Heartbeat");
+
+            pnlMessageNamesContainer = new Panel
+            {
+                Dock = DockStyle.Top,
+                AutoSize = true,
+                //BorderStyle = BorderStyle.FixedSingle
+                Margin = new Padding(0),
+                Padding = new Padding(0)
+            };
+            pnlMessageNamesContainer.Controls.Add(tblMessageNames);
+            pnlMessageNamesContainer.EnableDoubleBuffering(true);
+
+
             // --- Add panels of controls to main layout ---
             layout.Controls.Add(panTitle, 0, 0);
             layout.Controls.Add(panStatus, 0, 1);
@@ -235,25 +268,35 @@ namespace DSGTool
             layout.Controls.Add(panCountExceptHB, 0, 3);
             layout.Controls.Add(buttonPanel, 0, 4);
             layout.Controls.Add(pnlFullTable, 0, 5);
+            layout.Controls.Add(pnlMessageNamesContainer, 0, 6);
 
             Controls.Add(layout);
         }
 
-        private void AddRowInTable(string msgType, string lsn, int receivedCount, long dbCount)
+        private void AddRowInMessageCountsTable(string msgType, string lsn, int receivedCount, long dbCount)
         {
             int newRowIndex = tblMessageCounts.RowCount;
             tblMessageCounts.RowCount++;
             tblMessageCounts.RowStyles.Add(new RowStyle(SizeType.Absolute, 25));
-            var lblType = CreateCellLabel(msgType);
-            var lblLsn = CreateCellLabel(lsn.ToString());
-            var lblRecv = CreateCellLabel(receivedCount.ToString());
-            var lblDb = CreateCellLabel(dbCount.ToString());
+            var lblType = CreateMessageCountsCellLabel(msgType);
+            var lblLsn = CreateMessageCountsCellLabel(lsn.ToString());
+            var lblRecv = CreateMessageCountsCellLabel(receivedCount.ToString());
+            var lblDb = CreateMessageCountsCellLabel(dbCount.ToString());
             if (msgType != "0")
                 HighlightMismatch(lblRecv, lblDb);
             tblMessageCounts.Controls.Add(lblType, 0, newRowIndex);
             tblMessageCounts.Controls.Add(lblLsn, 1, newRowIndex);
             tblMessageCounts.Controls.Add(lblRecv, 2, newRowIndex);
             tblMessageCounts.Controls.Add(lblDb, 3, newRowIndex);
+        }
+
+        private void AddRowInMessageNamesTable(string msgType, string msgName)
+        {
+            int newRowIndex = tblMessageNames.RowCount;
+            tblMessageNames.RowCount++;
+            //tblMessageNames.RowStyles.Add(new RowStyle(SizeType.Absolute, 20));
+            var lblMessageName = CreateMessageNamesCellLabel(msgType, msgName);
+            tblMessageNames.Controls.Add(lblMessageName, 0, newRowIndex);
         }
 
         // --- Create header & data cells ---
@@ -271,7 +314,7 @@ namespace DSGTool
                 Padding = new Padding(0)
             };
 
-        private Label CreateCellLabel(string text) =>
+        private Label CreateMessageCountsCellLabel(string text) =>
             new Label
             {
                 Text = text,
@@ -283,7 +326,19 @@ namespace DSGTool
                 Margin = new Padding(0),
                 Padding = new Padding(0)
             };
-
+        private Label CreateMessageNamesCellLabel(string tag, string text) =>
+            new Label
+            {
+                Tag = tag,
+                Text = tag + " : " + text,
+                Font = new Font("Segoe UI", 8),
+                AutoSize = true,
+                //Height = 5,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.TopLeft,
+                Margin = new Padding(0),
+                Padding = new Padding(2)
+            };
         // --- Delete handling ---
         private async Task HandleDeleteClickAsync()
         {
@@ -362,12 +417,15 @@ namespace DSGTool
 
         // --- Update table rows ---
         public void UpdateMessageTypeCount(string msgType, string lsn, int count) =>
-            UpdateOrCreateRow(msgType, lsn: lsn, receivedCount: count);
+            UpdateOrCreateMessageCountsRow(msgType, lsn: lsn, receivedCount: count);
 
         public void UpdateMessageTypeCountDB(string msgType, long count) =>
-            UpdateOrCreateRow(msgType, dbCount: count);
+            UpdateOrCreateMessageCountsRow(msgType, dbCount: count);
 
-        private void UpdateOrCreateRow(string msgType, string? lsn = null, int? receivedCount = null, long? dbCount = null)
+        public void UpdateMessageTypeName(string msgType, string msgName) =>
+            CreateMessageNamesRow(msgType, msgName);
+
+        private void UpdateOrCreateMessageCountsRow(string msgType, string? lsn = null, int? receivedCount = null, long? dbCount = null)
         {
             tblMessageCounts.SuspendLayout();
 
@@ -393,13 +451,33 @@ namespace DSGTool
                 }
 
                 // Add new row
-                AddRowInTable(msgType, lsn ?? "0", receivedCount ?? 0, dbCount ?? 0);
+                AddRowInMessageCountsTable(msgType, lsn ?? "0", receivedCount ?? 0, dbCount ?? 0);
             }
             finally
             {
                 tblMessageCounts.ResumeLayout();
                 tblMessageCounts.Invalidate();
                 tblMessageCounts.Update();
+            }
+        }
+
+        private void CreateMessageNamesRow(string msgType, string msgName)
+        {
+            tblMessageNames.SuspendLayout();
+
+            try
+            {
+                Label lbl = null;
+                foreach (Control ctrl in tblMessageNames.Controls)
+                    if (ctrl is Label label && label.Tag?.ToString() == msgType) { lbl = label; break; }
+                if (lbl == null)
+                    AddRowInMessageNamesTable(msgType, msgName);
+            }
+            finally
+            {
+                tblMessageNames.ResumeLayout();
+                tblMessageNames.Invalidate();
+                tblMessageNames.Update();
             }
         }
 
@@ -423,7 +501,7 @@ namespace DSGTool
             tblMessageCounts.Controls.Clear();
             tblMessageCounts.RowCount = 0;
 
-            AddRowInTable("0", "0", 0, 0);
+            AddRowInMessageCountsTable("0", "0", 0, 0);
         }
     }
 

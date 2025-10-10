@@ -24,15 +24,17 @@
             btnQuit = new Button();
             txtLog = new RichTextBox();
             btnConnect = new Button();
-            flowLayoutPanel1 = new FlowLayoutPanel();
+            flowLayoutPanelCards = new FlowLayoutPanel();
             btnDbManager = new Button();
             btnLoadClients = new Button();
             btnDelete = new Button();
+            flowLayoutButtons = new FlowLayoutPanel();
+            flowLayoutButtons.SuspendLayout();
             SuspendLayout();
             // 
             // btnDownload
             // 
-            btnDownload.Location = new Point(235, 12);
+            btnDownload.Location = new Point(225, 13);
             btnDownload.Name = "btnDownload";
             btnDownload.Size = new Size(100, 30);
             btnDownload.TabIndex = 2;
@@ -41,7 +43,7 @@
             // 
             // btnHeartbeat
             // 
-            btnHeartbeat.Location = new Point(341, 12);
+            btnHeartbeat.Location = new Point(331, 13);
             btnHeartbeat.Name = "btnHeartbeat";
             btnHeartbeat.Size = new Size(100, 30);
             btnHeartbeat.TabIndex = 3;
@@ -50,7 +52,7 @@
             // 
             // btnStop
             // 
-            btnStop.Location = new Point(447, 12);
+            btnStop.Location = new Point(437, 13);
             btnStop.Name = "btnStop";
             btnStop.Size = new Size(100, 30);
             btnStop.TabIndex = 4;
@@ -59,7 +61,7 @@
             // 
             // btnQuit
             // 
-            btnQuit.Location = new Point(553, 12);
+            btnQuit.Location = new Point(763, 13);
             btnQuit.Name = "btnQuit";
             btnQuit.Size = new Size(100, 30);
             btnQuit.TabIndex = 5;
@@ -69,33 +71,33 @@
             // txtLog
             // 
             txtLog.Font = new Font("Consolas", 9F);
-            txtLog.Location = new Point(12, 372);
+            txtLog.Location = new Point(13, 432);
             txtLog.Name = "txtLog";
             txtLog.ReadOnly = true;
             txtLog.ScrollBars = RichTextBoxScrollBars.Vertical;
-            txtLog.Size = new Size(1303, 166);
+            txtLog.Size = new Size(1302, 204);
             txtLog.TabIndex = 7;
             txtLog.Text = "";
             // 
             // btnConnect
             // 
-            btnConnect.Location = new Point(129, 12);
+            btnConnect.Location = new Point(119, 13);
             btnConnect.Name = "btnConnect";
             btnConnect.Size = new Size(100, 30);
             btnConnect.TabIndex = 1;
             btnConnect.Text = "Connect";
             btnConnect.Click += btnConnect_Click;
             // 
-            // flowLayoutPanel1
+            // flowLayoutPanelCards
             // 
-            flowLayoutPanel1.Location = new Point(3, 55);
-            flowLayoutPanel1.Name = "flowLayoutPanel1";
-            flowLayoutPanel1.Size = new Size(1312, 311);
-            flowLayoutPanel1.TabIndex = 6;
+            flowLayoutPanelCards.Location = new Point(0, 63);
+            flowLayoutPanelCards.Name = "flowLayoutPanelCards";
+            flowLayoutPanelCards.Size = new Size(1327, 364);
+            flowLayoutPanelCards.TabIndex = 6;
             // 
             // btnDbManager
             // 
-            btnDbManager.Location = new Point(960, 12);
+            btnDbManager.Location = new Point(653, 13);
             btnDbManager.Name = "btnDbManager";
             btnDbManager.Size = new Size(104, 30);
             btnDbManager.TabIndex = 6;
@@ -105,7 +107,7 @@
             // 
             // btnLoadClients
             // 
-            btnLoadClients.Location = new Point(14, 12);
+            btnLoadClients.Location = new Point(13, 13);
             btnLoadClients.Name = "btnLoadClients";
             btnLoadClients.Size = new Size(100, 30);
             btnLoadClients.TabIndex = 0;
@@ -114,7 +116,7 @@
             // 
             // btnDelete
             // 
-            btnDelete.Location = new Point(850, 12);
+            btnDelete.Location = new Point(543, 13);
             btnDelete.Name = "btnDelete";
             btnDelete.Size = new Size(104, 30);
             btnDelete.TabIndex = 8;
@@ -122,28 +124,42 @@
             btnDelete.UseVisualStyleBackColor = true;
             btnDelete.Click += btnDelete_Click;
             // 
+            // flowLayoutButtons
+            // 
+            flowLayoutButtons.Controls.Add(btnLoadClients);
+            flowLayoutButtons.Controls.Add(btnConnect);
+            flowLayoutButtons.Controls.Add(btnDownload);
+            flowLayoutButtons.Controls.Add(btnHeartbeat);
+            flowLayoutButtons.Controls.Add(btnStop);
+            flowLayoutButtons.Controls.Add(btnDelete);
+            flowLayoutButtons.Controls.Add(btnDbManager);
+            flowLayoutButtons.Controls.Add(btnQuit);
+            flowLayoutButtons.Dock = DockStyle.Top;
+            flowLayoutButtons.Location = new Point(0, 0);
+            flowLayoutButtons.Margin = new Padding(10);
+            flowLayoutButtons.Name = "flowLayoutButtons";
+            flowLayoutButtons.Padding = new Padding(10);
+            flowLayoutButtons.Size = new Size(1327, 58);
+            flowLayoutButtons.TabIndex = 9;
+            // 
             // MainForm
             // 
-            ClientSize = new Size(1327, 550);
-            Controls.Add(btnDelete);
-            Controls.Add(btnLoadClients);
-            Controls.Add(btnDbManager);
-            Controls.Add(flowLayoutPanel1);
-            Controls.Add(btnConnect);
-            Controls.Add(btnDownload);
-            Controls.Add(btnHeartbeat);
-            Controls.Add(btnStop);
-            Controls.Add(btnQuit);
+            ClientSize = new Size(1327, 642);
+            Controls.Add(flowLayoutButtons);
+            Controls.Add(flowLayoutPanelCards);
             Controls.Add(txtLog);
             Name = "MainForm";
+            StartPosition = FormStartPosition.CenterScreen;
             Text = "DSG Client GUI";
             Load += MainForm_Load;
+            flowLayoutButtons.ResumeLayout(false);
             ResumeLayout(false);
         }
         private Button btnConnect;
-        private FlowLayoutPanel flowLayoutPanel1;
+        private FlowLayoutPanel flowLayoutPanelCards;
         private Button btnDbManager;
         private Button btnLoadClients;
         private Button btnDelete;
+        private FlowLayoutPanel flowLayoutButtons;
     }
 }

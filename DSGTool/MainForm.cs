@@ -113,8 +113,8 @@ namespace DSGTool
 
         private void BuildCards()
         {
-            flowLayoutPanel1.WrapContents = true;
-            flowLayoutPanel1.AutoScroll = true;
+            flowLayoutPanelCards.WrapContents = true;
+            flowLayoutPanelCards.AutoScroll = true;
 
             foreach (var client in _clientPool.Clients)
             {
@@ -141,7 +141,7 @@ namespace DSGTool
                     });
                 };
 
-                flowLayoutPanel1.Controls.Add(card);
+                flowLayoutPanelCards.Controls.Add(card);
                 _cards[gatewayName] = card;
             }
         }
@@ -176,6 +176,7 @@ namespace DSGTool
             {
                 stats.SetMessageCountDB(messageId, messageCount);
                 card.UpdateMessageTypeCountDB(messageId, messageCount);
+                card.UpdateMessageTypeName(messageId, tableName);
             }
         }
 
