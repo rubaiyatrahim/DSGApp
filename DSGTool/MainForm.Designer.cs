@@ -71,11 +71,11 @@
             // txtLog
             // 
             txtLog.Font = new Font("Consolas", 9F);
-            txtLog.Location = new Point(13, 432);
+            txtLog.Location = new Point(0, 0);
             txtLog.Name = "txtLog";
             txtLog.ReadOnly = true;
             txtLog.ScrollBars = RichTextBoxScrollBars.Vertical;
-            txtLog.Size = new Size(1302, 204);
+            txtLog.Size = new Size(100, 96);
             txtLog.TabIndex = 7;
             txtLog.Text = "";
             // 
@@ -90,9 +90,9 @@
             // 
             // flowLayoutPanelCards
             // 
-            flowLayoutPanelCards.Location = new Point(0, 63);
+            flowLayoutPanelCards.Location = new Point(0, 0);
             flowLayoutPanelCards.Name = "flowLayoutPanelCards";
-            flowLayoutPanelCards.Size = new Size(1327, 364);
+            flowLayoutPanelCards.Size = new Size(200, 100);
             flowLayoutPanelCards.TabIndex = 6;
             // 
             // btnDbManager
@@ -136,15 +136,15 @@
             flowLayoutButtons.Controls.Add(btnQuit);
             flowLayoutButtons.Dock = DockStyle.Top;
             flowLayoutButtons.Location = new Point(0, 0);
-            flowLayoutButtons.Margin = new Padding(10);
+            flowLayoutButtons.Margin = new Padding(5, 0, 0, 0);
             flowLayoutButtons.Name = "flowLayoutButtons";
             flowLayoutButtons.Padding = new Padding(10);
-            flowLayoutButtons.Size = new Size(1327, 58);
+            flowLayoutButtons.Size = new Size(1171, 100);
             flowLayoutButtons.TabIndex = 9;
             // 
             // MainForm
             // 
-            ClientSize = new Size(1327, 642);
+            ClientSize = new Size(1160, 648);
             Controls.Add(flowLayoutButtons);
             Controls.Add(flowLayoutPanelCards);
             Controls.Add(txtLog);

@@ -37,9 +37,54 @@ namespace DSGTool
         public MainForm()
         {
             InitializeComponent();
+            BuildMainLayout();
             SetLogPath();
             StartLogUIWriterTask();
             StartLogFileWriterTask();
+        }
+
+        private void BuildMainLayout()
+        {
+            // --- Main container ---
+            var mainLayout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 3
+            };
+
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Buttons panel
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Cards panel
+            mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); // Log area
+
+            // --- Buttons panel ---
+            flowLayoutButtons.Dock = DockStyle.Fill;
+            flowLayoutButtons.FlowDirection = FlowDirection.LeftToRight;
+            flowLayoutButtons.AutoSize = true;
+            flowLayoutButtons.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            flowLayoutButtons.Padding = new Padding(5);
+
+            // --- Cards panel ---
+            flowLayoutPanelCards.Dock = DockStyle.Fill;
+            flowLayoutPanelCards.FlowDirection = FlowDirection.LeftToRight;
+            flowLayoutPanelCards.AutoSize = true;
+            flowLayoutPanelCards.WrapContents = false;
+            flowLayoutPanelCards.Padding = new Padding(0, 0, 10, 0);
+
+            // --- RichTextBox area ---
+            txtLog.Dock = DockStyle.Fill;
+            txtLog.BackColor = Color.Black;
+            txtLog.ForeColor = Color.Lime;
+            txtLog.Font = new Font("Consolas", 10);
+            txtLog.ReadOnly = true;
+
+            // --- Add controls to layout ---
+            mainLayout.Controls.Add(flowLayoutButtons, 0, 0);
+            mainLayout.Controls.Add(flowLayoutPanelCards, 0, 1);
+            mainLayout.Controls.Add(txtLog, 0, 2);
+
+            // --- Add layout to the form ---
+            Controls.Add(mainLayout);
         }
 
         private void SetLogPath()
